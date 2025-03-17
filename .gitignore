@@ -1,1 +1,7 @@
 /.venv
+*.png
+*.tsv
+*.json
+*.safetensors
+*.txt
+*.log
