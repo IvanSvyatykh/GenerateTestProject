@@ -6,3 +6,4 @@
 *.txt
 *.png
 *.safetensors
+*.pyc

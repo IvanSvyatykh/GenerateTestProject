@@ -5,10 +5,13 @@ from pathlib import Path
 from aiogram import Bot, Dispatcher
 from config import BOT_TOKEN, WEB_HOOK_URL, WEB_HOOK_PATH, WEB_SERVER_HOST
 from aiohttp import web
+from aiogram.fsm.storage.memory import MemoryStorage
 from aiogram.webhook.aiohttp_server import (
     SimpleRequestHandler,
     setup_application,
 )
+
+import handlers.question_handler as question_handler
 
 
 async def on_startup(bot: Bot) -> None:
@@ -33,19 +36,24 @@ async def set_up_logger(path_to_log_file: Path):
 
 
 async def main():
+    # bot = Bot(token=BOT_TOKEN)
+    # dp = Dispatcher()
     bot = Bot(token=BOT_TOKEN)
-    dp = Dispatcher()
-    dp.startup.register(on_startup)
+    dp = Dispatcher(storage=MemoryStorage())
+    dp.include_router(question_handler.router)
+    # dp.startup.register(on_startup)
     app = web.Application()
     webhook_requests_handler = SimpleRequestHandler(
         dispatcher=dp,
         bot=bot,
     )
 
-    await set_up_logger(Path("./logs/bot_logs.log"))
-    webhook_requests_handler.register(app, path=WEB_HOOK_PATH)
-    setup_application(app, dp, bot=bot)
-    await web._run_app(app, host=WEB_SERVER_HOST)
+    await set_up_logger(Path("./app/logs/bot_logs.log"))
+    await bot.delete_webhook(drop_pending_updates=True)
+    await dp.start_polling(bot, allowed_updates=dp.resolve_used_update_types())
+    # webhook_requests_handler.register(app, path=WEB_HOOK_PATH)
+    # setup_application(app, dp, bot=bot)
+    # sawait web._run_app(app, host=WEB_SERVER_HOST)
 
 
 if __name__ == "__main__":

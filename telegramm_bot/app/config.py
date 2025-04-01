@@ -1,4 +1,3 @@
-
 import os
 from dotenv import load_dotenv
 
@@ -8,3 +7,9 @@ BOT_TOKEN = os.getenv("BOT_TOKEN")
 WEB_HOOK_URL = os.getenv("WEB_HOOK_URL")
 WEB_HOOK_PATH = os.getenv("WEB_HOOK_PATH")
 WEB_SERVER_HOST = os.getenv("WEB_SERVER_HOST")
+# API env
+DEEP_SEEK_API_KEY = os.getenv("DEEP_SEEK_API_KEY")
+API_URL = os.getenv("API_URL")
+# Giga chat
+GIGA_CHAT_SECRET_KEY = os.getenv("GIGA_CHAT_SECRET_KEY")
+GIGA_CHAT_MODEL_NAME = os.getenv("GIGA_CHAT_MODEL_NAME")
