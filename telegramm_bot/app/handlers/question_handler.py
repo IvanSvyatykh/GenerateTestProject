@@ -1,58 +1,342 @@
+import asyncio
+import json
+
 from aiogram import Router, types, F
 from aiogram.fsm.context import FSMContext
 from aiogram.filters import Command
+from aiogram.types import CallbackQuery
+from aiohttp import ClientSession
 from handlers.utils.answers import (
-    GREETING_MESS,
     CHOOSE_SUBJECT,
     CHOOSE_THEME,
+    CHOOSE_COMPLEXITY,
+    CHOOSE_FORMAT_RESPONSE,
     CHOOSE_QUESTION_NUM,
-    CHOOSE_QUESTION_TYPE,
+    CHOOSE_ANSWER_NUM,
+    CHOOSE_PERCENT_FORMAT_RESPONSE,
+    CHOOSE_QUESTION_NUM_WITH_ANSWER_NUM,
+    CHOOSE_QUESTION_NUM_WITH_ANSWER_NUM_AND_PERCENT,
+    FINISHED_TEST,
+    FINISHED_TEST_WITH_ANSWER_NUM,
+    FINISHED_TEST_WITH_ANSWER_NUM_AND_PERCENT
+)
+from handlers.utils.keyboards import (
+    get_subject_keyboard,
+    get_complexity_keyboard,
+    get_format_response_keyboard,
+    get_question_num_keyboard,
+    get_answer_question_num_keyboard,
+    get_mixed_format_keyboard,
+    get_file_format_keyboard,
 )
 from service.generate_test import generate_test, TEMPLATE
 from handlers.utils.state_machine import QuestionStateMachine
+from api.rapid_gpt4_requests import (
+    create_user_prompt,
+    gpt4_request,
+)
 
 router = Router()
+loading_tasks = {}
+
+SUBJECT_AREA_NAMES = {
+    "languages": "📚 Языки и литература",
+    "math": "🔢 Математика и информатика",
+    "social": "🌍 Общественные науки",
+    "science": "🔬 Естественные науки",
+    "art": "🎨 Искусство и культура",
+    "tech": "🛠️ Технология",
+    "personal": "🧠 Личностное развитие"
+}
 
 
-@router.message(Command("start"))
-async def start_dialog(message: types.Message, state: FSMContext):
-    await message.answer(text=GREETING_MESS)
+@router.callback_query(lambda c: c.data.startswith("area_"), QuestionStateMachine.subject_area)
+async def subject_area_handler(callback_query: CallbackQuery, state: FSMContext):
+    subject_area = callback_query.data.split("_")[1]
+    await state.update_data(subject_area=SUBJECT_AREA_NAMES[subject_area])
     await state.set_state(QuestionStateMachine.subject)
-    await message.answer(text=CHOOSE_SUBJECT)
+
+    await callback_query.message.edit_text(
+        text=CHOOSE_SUBJECT.format(subject_area=SUBJECT_AREA_NAMES[subject_area]),
+        parse_mode="Markdown",
+        reply_markup=await get_subject_keyboard(subject_area),
+    )
 
 
-@router.message(F.text, QuestionStateMachine.subject)
-async def choose_subject(message: types.Message, state: FSMContext):
-    await state.update_data(subject=message.text)
+@router.callback_query(lambda c: c.data.startswith("subject_"), QuestionStateMachine.subject)
+async def choose_subject_handler(callback_query: CallbackQuery, state: FSMContext):
+    data = await state.get_data()
+    subject_area = data.get("subject_area")
+
+    subject = callback_query.data.split("_")[1]
+    await state.update_data(subject=subject)
+
+    await state.update_data(bot_message_id=callback_query.message.message_id)
+
     await state.set_state(QuestionStateMachine.theme)
-    await message.answer(text=CHOOSE_THEME)
+    await callback_query.message.edit_text(
+        text=CHOOSE_THEME.format(
+            subject_area=subject_area,
+            subject=subject),
+        parse_mode="Markdown",
+    )
 
 
 @router.message(F.text, QuestionStateMachine.theme)
-async def choose_theme(message: types.Message, state: FSMContext):
-    await state.update_data(theme=message.text)
-    await state.set_state(QuestionStateMachine.question_num)
-    await message.answer(text=CHOOSE_QUESTION_NUM)
+async def choose_theme_handler(message: types.Message, state: FSMContext):
+    data = await state.get_data()
+    subject_area = data.get("subject_area")
+    subject = data.get("subject")
 
+    theme = message.text
+    await state.update_data(theme=theme)
 
-@router.message(F.text, QuestionStateMachine.question_num)
-async def choose_question_num(message: types.Message, state: FSMContext):
-    await state.update_data(question_num=message.text)
-    await state.set_state(QuestionStateMachine.question_type)
-    await message.answer(text=CHOOSE_QUESTION_TYPE)
+    bot_message_id = data.get("bot_message_id")
+    await message.bot.delete_message(chat_id=message.chat.id, message_id=bot_message_id)
+    await message.delete()
 
-
-@router.message(F.text, QuestionStateMachine.question_type)
-async def choose_question_type(message: types.Message, state: FSMContext):
-    await state.update_data(question_type=message.text)
-    result = await state.get_data()
-    await state.clear()
-    test = await generate_test(
-        TEMPLATE.format(
-            result["subject"],
-            result["theme"],
-            result["question_num"],
-            result["question_type"],
-        )
+    await state.set_state(QuestionStateMachine.complexity)
+    await message.answer(
+        text=CHOOSE_COMPLEXITY.format(
+            subject_area=subject_area,
+            subject=subject,
+            theme=theme),
+        parse_mode="Markdown",
+        reply_markup=await get_complexity_keyboard(),
     )
-    await message.answer(text=str(test.choices[0].message.content))
+
+
+@router.callback_query(lambda c: c.data.startswith("complexity_"), QuestionStateMachine.complexity)
+async def choose_complexity_handler(callback_query: CallbackQuery, state: FSMContext):
+    data = await state.get_data()
+    subject_area = data.get("subject_area")
+    subject = data.get("subject")
+    theme = data.get("theme")
+
+    complexity_names = {
+        "easy": "🔹 Легкий",
+        "medium": "🔸 Средний",
+        "hard": "🔺 Сложный"
+    }
+
+    complexity = callback_query.data.split("_")[1]
+    await state.update_data(complexity=complexity_names[complexity])
+
+    await state.set_state(QuestionStateMachine.format_response)
+    await callback_query.message.edit_text(
+        text=CHOOSE_FORMAT_RESPONSE.format(
+            subject_area=subject_area,
+            subject=subject,
+            theme=theme,
+            complexity=complexity_names[complexity]),
+        parse_mode="Markdown",
+        reply_markup=await get_format_response_keyboard(),
+    )
+
+
+@router.callback_query(lambda c: c.data.startswith("format_"), QuestionStateMachine.format_response)
+async def choose_format_response_handler(callback_query: CallbackQuery, state: FSMContext):
+    data = await state.get_data()
+    subject_area = data.get("subject_area")
+    subject = data.get("subject")
+    theme = data.get("theme")
+    complexity = data.get("complexity")
+
+    format_names = {
+        "open": "📜 Открытые вопросы",
+        "choices": "✅ Варианты ответов",
+        "mixed": "🔀 Смешанный"
+    }
+
+    format_response = callback_query.data.split("_")[1]
+    await state.update_data(format_response=format_names[format_response])
+
+    if format_response == "open":
+        await state.set_state(QuestionStateMachine.question_num)
+        await callback_query.message.edit_text(
+            text=CHOOSE_QUESTION_NUM.format(
+                subject_area=subject_area,
+                subject=subject,
+                theme=theme,
+                complexity=complexity,
+                format_response=format_names[format_response]),
+            parse_mode="Markdown",
+            reply_markup=await get_question_num_keyboard(),
+        )
+    else:
+        await state.set_state(QuestionStateMachine.answer_num)
+        await callback_query.message.edit_text(
+            text=CHOOSE_ANSWER_NUM.format(
+                subject_area=subject_area,
+                subject=subject,
+                theme=theme,
+                complexity=complexity,
+                format_response=format_names[format_response]),
+            parse_mode="Markdown",
+            reply_markup=await get_answer_question_num_keyboard(),
+        )
+
+
+@router.callback_query(lambda c: c.data.startswith("answer_question_num_"), QuestionStateMachine.answer_num)
+async def choose_answer_question_num_handler(callback_query: CallbackQuery, state: FSMContext):
+    data = await state.get_data()
+    subject_area = data.get("subject_area")
+    subject = data.get("subject")
+    theme = data.get("theme")
+    complexity = data.get("complexity")
+    format_response = data.get("format_response")
+
+    answer_num = callback_query.data.split("_")[3]
+    await state.update_data(answer_num=answer_num)
+    if format_response == "✅ Варианты ответов":
+        await state.set_state(QuestionStateMachine.question_num)
+        await callback_query.message.edit_text(
+            text=CHOOSE_QUESTION_NUM_WITH_ANSWER_NUM.format(
+                subject_area=subject_area,
+                subject=subject,
+                theme=theme,
+                complexity=complexity,
+                format_response=format_response,
+                answer_num=answer_num),
+            parse_mode="Markdown",
+            reply_markup=await get_question_num_keyboard(),
+        )
+    else:
+        await state.set_state(QuestionStateMachine.percent_format_response)
+        await callback_query.message.edit_text(
+            text=CHOOSE_PERCENT_FORMAT_RESPONSE.format(
+                subject_area=subject_area,
+                subject=subject,
+                theme=theme,
+                complexity=complexity,
+                format_response=format_response,
+                answer_num=answer_num),
+            parse_mode="Markdown",
+            reply_markup=await get_mixed_format_keyboard(),
+        )
+
+
+@router.callback_query(lambda c: c.data.startswith("mixed_percent_"), QuestionStateMachine.percent_format_response)
+async def choose_mixed_percent_handler(callback_query: CallbackQuery, state: FSMContext):
+    data = await state.get_data()
+    subject_area = data.get("subject_area")
+    subject = data.get("subject")
+    theme = data.get("theme")
+    complexity = data.get("complexity")
+    format_response = data.get("format_response")
+    answer_num = data.get("answer_num")
+
+    mixed_percent = callback_query.data.split("_")[2]
+    await state.update_data(mixed_percent=mixed_percent)
+
+    await state.set_state(QuestionStateMachine.question_num)
+    await callback_query.message.edit_text(
+        text=CHOOSE_QUESTION_NUM_WITH_ANSWER_NUM_AND_PERCENT.format(
+            subject_area=subject_area,
+            subject=subject,
+            theme=theme,
+            complexity=complexity,
+            format_response=format_response,
+            answer_num=answer_num,
+            mixed_percent=mixed_percent),
+        parse_mode="Markdown",
+        reply_markup=await get_question_num_keyboard(),
+    )
+
+
+@router.callback_query(lambda c: c.data.startswith("question_num_"), QuestionStateMachine.question_num)
+async def finished_test_handler(callback_query: CallbackQuery, state: FSMContext):
+    await state.update_data(question_num=callback_query.data.split("_")[2])
+    data = await state.get_data()
+
+    # Собираем сообщение-настройки
+    subject_area = data.get("subject_area")
+    subject = data.get("subject")
+    theme = data.get("theme")
+    complexity = data.get("complexity")
+    format_response = data.get("format_response")
+    answer_num = data.get("answer_num")
+    mixed_percent = data.get("mixed_percent")
+    question_num = data.get("question_num")
+
+    if answer_num is None:
+        finished_text = FINISHED_TEST.format(
+            subject_area=subject_area,
+            subject=subject,
+            theme=theme,
+            complexity=complexity,
+            format_response=format_response,
+            question_num=question_num, )
+    elif mixed_percent is None:
+        finished_text = FINISHED_TEST_WITH_ANSWER_NUM.format(
+            subject_area=subject_area,
+            subject=subject,
+            theme=theme,
+            complexity=complexity,
+            format_response=format_response,
+            answer_num=answer_num,
+            question_num=question_num, )
+    else:
+        finished_text = FINISHED_TEST_WITH_ANSWER_NUM_AND_PERCENT.format(
+            subject_area=subject_area,
+            subject=subject,
+            theme=theme,
+            complexity=complexity,
+            format_response=format_response,
+            answer_num=answer_num,
+            mixed_percent=mixed_percent,
+            question_num=question_num, )
+
+    loading_msg = await callback_query.message.edit_text(text="⏳ Генерирую тест")
+
+    key = f"{callback_query.from_user.id}_{loading_msg.message_id}"
+    loading_task = asyncio.create_task(
+        animate_loading(callback_query.bot, loading_msg.chat.id, loading_msg.message_id, key)
+    )
+    loading_tasks[key] = loading_task
+
+    user_prompt = create_user_prompt(data)
+    async with ClientSession() as session:
+        try:
+            response = await gpt4_request(session, user_prompt)
+            test_json = response.get("result", "⚠️ Не удалось получить результат от нейросети.")
+            test_json = test_json.strip('```json\n').strip('\n```')
+            try:
+                test_json = json.loads(test_json)
+            except json.JSONDecodeError:
+                test_json = "❌ Ошибка при обработке данных от нейросети"
+
+        except Exception as e:
+            test_json = f"❌ Ошибка при запросе к нейросети: {e}"
+
+    print(test_json)
+
+    if key in loading_tasks:
+        loading_tasks[key].cancel()
+        try:
+            await loading_tasks[key]
+        except asyncio.CancelledError:
+            pass
+
+    await state.update_data(test_json=test_json)
+    await state.set_state(QuestionStateMachine.file_format)
+    await callback_query.message.edit_text(
+        text=finished_text,
+        parse_mode="Markdown",
+        reply_markup=await get_file_format_keyboard(),
+    )
+
+
+async def animate_loading(bot, chat_id, message_id, key):
+    dots = [".", "..", "..."]
+    i = 0
+    try:
+        while True:
+            text = f"⏳ Генерирую тест{dots[i % 3]}"
+            await bot.edit_message_text(chat_id=chat_id, message_id=message_id, text=text)
+            i += 1
+            await asyncio.sleep(0.5)
+    except asyncio.CancelledError:
+        pass
+    finally:
+        loading_tasks.pop(key, None)

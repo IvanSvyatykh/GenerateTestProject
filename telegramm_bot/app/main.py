@@ -11,7 +11,11 @@ from aiogram.webhook.aiohttp_server import (
     setup_application,
 )
 
-import handlers.question_handler as question_handler
+from handlers import (
+    auth_hanlder,
+    question_handler,
+    file_format_hanlder,
+)
 
 
 async def on_startup(bot: Bot) -> None:
@@ -40,7 +44,9 @@ async def main():
     # dp = Dispatcher()
     bot = Bot(token=BOT_TOKEN)
     dp = Dispatcher(storage=MemoryStorage())
+    dp.include_router(auth_hanlder.router)
     dp.include_router(question_handler.router)
+    dp.include_router(file_format_hanlder.router)
     # dp.startup.register(on_startup)
     app = web.Application()
     webhook_requests_handler = SimpleRequestHandler(
@@ -48,7 +54,7 @@ async def main():
         bot=bot,
     )
 
-    await set_up_logger(Path("./app/logs/bot_logs.log"))
+    await set_up_logger(Path("./logs/bot_logs.log"))
     await bot.delete_webhook(drop_pending_updates=True)
     await dp.start_polling(bot, allowed_updates=dp.resolve_used_update_types())
     # webhook_requests_handler.register(app, path=WEB_HOOK_PATH)
