@@ -7,6 +7,7 @@ from aiogram.filters import Command
 from aiogram.types import CallbackQuery
 from aiohttp import ClientSession
 from handlers.utils.answers import (
+    CHOOSE_SUBJECT_AREA,
     CHOOSE_SUBJECT,
     CHOOSE_THEME,
     CHOOSE_COMPLEXITY,
@@ -28,6 +29,7 @@ from handlers.utils.keyboards import (
     get_answer_question_num_keyboard,
     get_mixed_format_keyboard,
     get_file_format_keyboard,
+    get_area_keyboard,
 )
 from service.generate_test import generate_test, TEMPLATE
 from handlers.utils.state_machine import QuestionStateMachine
@@ -48,6 +50,17 @@ SUBJECT_AREA_NAMES = {
     "tech": "🛠️ Технология",
     "personal": "🧠 Личностное развитие"
 }
+
+
+@router.callback_query(lambda c: c.data == "new_test")
+async def new_test_handler(callback_query: CallbackQuery, state: FSMContext):
+    await state.set_state(QuestionStateMachine.subject_area)
+
+    await callback_query.message.answer(
+        text=CHOOSE_SUBJECT_AREA,
+        parse_mode="Markdown",
+        reply_markup=await get_area_keyboard()
+    )
 
 
 @router.callback_query(lambda c: c.data.startswith("area_"), QuestionStateMachine.subject_area)
@@ -309,7 +322,6 @@ async def finished_test_handler(callback_query: CallbackQuery, state: FSMContext
         except Exception as e:
             test_json = f"❌ Ошибка при запросе к нейросети: {e}"
 
-    print(test_json)
 
     if key in loading_tasks:
         loading_tasks[key].cancel()

@@ -11,6 +11,7 @@ from service.file_generator import (
     generate_pdf,
     generate_excel,
 )
+from handlers.utils.keyboards import get_new_generate_keyboard
 
 router = Router()
 
@@ -32,6 +33,10 @@ async def file_format_handler(callback_query: CallbackQuery, state: FSMContext):
     with open(file_path, 'rb'):
         document = FSInputFile(file_path, filename=os.path.basename(file_path))
 
-    await callback_query.message.answer_document(document=document, caption=f"Тест в формате {file_format.upper()}")
+    await callback_query.message.answer_document(
+        document=document,
+        caption=f"Тест в формате {file_format.upper()}",
+        reply_markup=await get_new_generate_keyboard()
+    )
 
-    # await state.clear()
+    await state.clear()

@@ -9,7 +9,6 @@ async def gpt4_request(session: ClientSession, user_prompt: str) -> dict:
         "x-rapidapi-host": "chatgpt-42.p.rapidapi.com",
         "Content-Type": "application/json"
     }
-    print(user_prompt)
 
     payload = {
         "messages": [
@@ -23,7 +22,6 @@ async def gpt4_request(session: ClientSession, user_prompt: str) -> dict:
 
     async with session.post(url=GPT4_API_URL, headers=headers, json=payload) as request:
         response = await request.json()
-        print(response)
     return response
 
 

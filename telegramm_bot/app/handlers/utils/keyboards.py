@@ -45,6 +45,12 @@ SUBJECT_AREAS = {
 }
 
 
+async def get_new_generate_keyboard() -> InlineKeyboardMarkup:
+    return InlineKeyboardMarkup(inline_keyboard=[
+        [InlineKeyboardButton(text="Сгенерировать новый тест", callback_data="new_test")],
+    ])
+
+
 async def get_area_keyboard() -> InlineKeyboardMarkup:
     return InlineKeyboardMarkup(inline_keyboard=[
         [InlineKeyboardButton(text="📚 Языки и литература", callback_data="area_languages")],
