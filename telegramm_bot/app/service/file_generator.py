@@ -61,7 +61,7 @@ async def generate_pdf(test_json, subject, user_id):
     pdf.add_font('ArialUnicode', '', 'ttf/Arial-Unicode-Regular.ttf', uni=True)
     pdf.set_font('ArialUnicode', size=12)
 
-    pdf.cell(200, 10, txt=f"Тема теста: {subject}", ln=True, align="C")
+    pdf.cell(200, 10, txt=f"Тема теста: {subject[1:].strip()}", ln=True, align="C")
 
     for idx, question in enumerate(questions, 1):
         pdf.cell(200, 10, txt=f"{idx}. {question['question']}", ln=True)
