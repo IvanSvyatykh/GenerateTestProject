@@ -18,7 +18,7 @@ from handlers.utils.answers import (
     CHOOSE_QUESTION_NUM_WITH_ANSWER_NUM_AND_PERCENT,
     FINISHED_TEST,
     FINISHED_TEST_WITH_ANSWER_NUM,
-    FINISHED_TEST_WITH_ANSWER_NUM_AND_PERCENT
+    FINISHED_TEST_WITH_ANSWER_NUM_AND_PERCENT,
 )
 from handlers.utils.keyboards import (
     get_subject_keyboard,

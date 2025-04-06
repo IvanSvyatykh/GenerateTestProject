@@ -3,6 +3,8 @@ from aiogram.fsm.state import StatesGroup, State
 
 class QuestionStateMachine(StatesGroup):
     subject_area = State()
+    manual_area = State()
+    manual_subject = State()
     subject = State()
     theme = State()
     complexity = State()

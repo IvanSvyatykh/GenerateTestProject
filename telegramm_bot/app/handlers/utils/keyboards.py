@@ -54,7 +54,7 @@ async def get_area_keyboard() -> InlineKeyboardMarkup:
         [InlineKeyboardButton(text="🎨 Искусство и культура", callback_data="area_art")],
         [InlineKeyboardButton(text="🛠️ Технология", callback_data="area_tech")],
         [InlineKeyboardButton(text="🧠 Личностное развитие", callback_data="area_personal")],
-        #[InlineKeyboardButton(text="✍🏻 Ввести предмет вручную", callback_data="manual_subject")],
+        [InlineKeyboardButton(text="✍🏻 Ввести предметную область вручную", callback_data="manual_area")],
     ])
 
 

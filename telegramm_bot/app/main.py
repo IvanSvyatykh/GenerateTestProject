@@ -15,6 +15,7 @@ from handlers import (
     auth_hanlder,
     question_handler,
     file_format_hanlder,
+    manual_input_handler,
 )
 
 
@@ -47,6 +48,7 @@ async def main():
     dp.include_router(auth_hanlder.router)
     dp.include_router(question_handler.router)
     dp.include_router(file_format_hanlder.router)
+    dp.include_router(manual_input_handler.router)
     # dp.startup.register(on_startup)
     app = web.Application()
     webhook_requests_handler = SimpleRequestHandler(
