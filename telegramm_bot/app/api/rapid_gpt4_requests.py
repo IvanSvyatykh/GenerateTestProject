@@ -1,15 +1,9 @@
-import json
+from config import GPT4_RAPIDAPI_KEYS, GPT4_API_URL
+import logging
 from aiohttp import ClientSession
-from config import GPT4_RAPIDAPI_KEY, GPT4_API_URL
 
 
 async def gpt4_request(session: ClientSession, user_prompt: str) -> dict:
-    headers = {
-        "x-rapidapi-key": GPT4_RAPIDAPI_KEY,
-        "x-rapidapi-host": "chatgpt-42.p.rapidapi.com",
-        "Content-Type": "application/json"
-    }
-
     payload = {
         "messages": [
             {
@@ -20,9 +14,30 @@ async def gpt4_request(session: ClientSession, user_prompt: str) -> dict:
         "web_access": True
     }
 
-    async with session.post(url=GPT4_API_URL, headers=headers, json=payload) as request:
-        response = await request.json()
-    return response
+    for api_key in GPT4_RAPIDAPI_KEYS:
+        headers = {
+            "x-rapidapi-key": api_key.strip(),
+            "x-rapidapi-host": "chatgpt-42.p.rapidapi.com",
+            "Content-Type": "application/json"
+        }
+
+        try:
+            async with session.post(url=GPT4_API_URL, headers=headers, json=payload) as request:
+                if request.status == 200:
+                    response = await request.json()
+                    return response
+                elif request.status == 429:
+                    logging.warning(f"Израсходован ключ: {api_key}, пробую другой")
+                    continue
+                else:
+                    logging.error(f"Error: {request.status} с ключем: {api_key}")
+                    continue
+        except Exception as e:
+            logging.exception(f"Error: key: {api_key}: {e}")
+            continue
+
+    logging.critical("All API keys are exhausted or failed.")
+    return {"error": "All API keys failed or rate limited."}
 
 
 def create_user_prompt(data: dict) -> str:

@@ -262,7 +262,6 @@ async def finished_test_handler(callback_query: CallbackQuery, state: FSMContext
     await state.update_data(question_num=callback_query.data.split("_")[2])
     data = await state.get_data()
 
-    # Собираем сообщение-настройки
     subject_area = data.get("subject_area")
     subject = data.get("subject")
     theme = data.get("theme")

@@ -10,7 +10,7 @@ WEB_SERVER_HOST = os.getenv("WEB_SERVER_HOST")
 # API env
 DEEP_SEEK_API_KEY = os.getenv("DEEP_SEEK_API_KEY")
 API_URL = os.getenv("API_URL")
-GPT4_RAPIDAPI_KEY = os.getenv("GPT4_RAPIDAPI_KEY")
+GPT4_RAPIDAPI_KEYS = os.getenv("GPT4_RAPIDAPI_KEYS", "").split(",")
 GPT4_API_URL = os.getenv("GPT4_API_URL")
 # Giga chat
 GIGA_CHAT_SECRET_KEY = os.getenv("GIGA_CHAT_SECRET_KEY")
