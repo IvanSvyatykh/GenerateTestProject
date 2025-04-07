@@ -1,9 +1,7 @@
 import os
-
-from aiogram import types, Router
-from aiogram.filters import Command
+from aiogram import Router
 from aiogram.fsm.context import FSMContext
-from aiogram.types import CallbackQuery, InputFile
+from aiogram.types import CallbackQuery
 from handlers.utils.state_machine import QuestionStateMachine
 from aiogram.types.input_file import FSInputFile
 from service.file_generator import (
@@ -21,14 +19,14 @@ async def file_format_handler(callback_query: CallbackQuery, state: FSMContext):
     file_format = callback_query.data.split("_")[2]
     data = await state.get_data()
     test_json = data.get("test_json")
-    subject = data.get("subject")
+    theme = data.get("theme")
 
     if file_format == "docx":
-        file_path = await generate_docx(test_json, subject, callback_query.from_user.id)
+        file_path = await generate_docx(test_json, theme, callback_query.from_user.id)
     elif file_format == "pdf":
-        file_path = await generate_pdf(test_json, subject, callback_query.from_user.id)
+        file_path = await generate_pdf(test_json, theme, callback_query.from_user.id)
     elif file_format == "excel":
-        file_path = await generate_excel(test_json, subject, callback_query.from_user.id)
+        file_path = await generate_excel(test_json, theme, callback_query.from_user.id)
 
     with open(file_path, 'rb'):
         document = FSInputFile(file_path, filename=os.path.basename(file_path))

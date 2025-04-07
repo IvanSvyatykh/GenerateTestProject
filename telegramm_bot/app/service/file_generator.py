@@ -6,7 +6,7 @@ from datetime import datetime
 import json
 
 
-async def generate_docx(test_json, subject, user_id):
+async def generate_docx(test_json, theme, user_id):
     if isinstance(test_json, str):
         try:
             test_json = json.loads(test_json)
@@ -19,7 +19,7 @@ async def generate_docx(test_json, subject, user_id):
     questions = test_json['questions']
 
     document = Document()
-    document.add_heading(f"Тема теста: {subject}", level=1)
+    document.add_heading(f"Тема теста: {theme}", level=1)
 
     for idx, question in enumerate(questions, 1):
         if not isinstance(question, dict) or 'question' not in question or 'answers' not in question or 'correct_answer' not in question:
@@ -44,7 +44,7 @@ async def generate_docx(test_json, subject, user_id):
     return file_path
 
 
-async def generate_pdf(test_json, subject, user_id):
+async def generate_pdf(test_json, theme, user_id):
     if isinstance(test_json, str):
         try:
             test_json = json.loads(test_json)
@@ -61,7 +61,7 @@ async def generate_pdf(test_json, subject, user_id):
     pdf.add_font('ArialUnicode', '', 'ttf/Arial-Unicode-Regular.ttf', uni=True)
     pdf.set_font('ArialUnicode', size=12)
 
-    pdf.cell(200, 10, txt=f"Тема теста: {subject[1:].strip()}", ln=True, align="C")
+    pdf.cell(200, 10, txt=f"Тема теста: {theme}", ln=True, align="C")
 
     for idx, question in enumerate(questions, 1):
         pdf.cell(200, 10, txt=f"{idx}. {question['question']}", ln=True)
@@ -83,7 +83,7 @@ async def generate_pdf(test_json, subject, user_id):
     return file_path
 
 
-async def generate_excel(test_json, subject, user_id):
+async def generate_excel(test_json, theme, user_id):
     if isinstance(test_json, str):
         try:
             test_json = json.loads(test_json)
@@ -99,7 +99,7 @@ async def generate_excel(test_json, subject, user_id):
     sheet = workbook.active
     sheet.title = "Тест"
 
-    sheet["A1"] = f"Тема теста: {subject}"
+    sheet["A1"] = f"Тема теста: {theme}"
 
     for idx, question in enumerate(questions, 1):
         sheet.append([f"{idx}. {question['question']}"])

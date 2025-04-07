@@ -1,12 +1,11 @@
 import asyncio
 import json
-
 from aiogram import Router, types, F
 from aiogram.fsm.context import FSMContext
-from aiogram.filters import Command
 from aiogram.types import CallbackQuery
 from aiohttp import ClientSession
 from handlers.utils.answers import (
+    ERROR_MESS,
     CHOOSE_SUBJECT_AREA,
     CHOOSE_SUBJECT,
     CHOOSE_THEME,
@@ -30,6 +29,7 @@ from handlers.utils.keyboards import (
     get_mixed_format_keyboard,
     get_file_format_keyboard,
     get_area_keyboard,
+    get_new_generate_keyboard,
 )
 from service.generate_test import generate_test, TEMPLATE
 from handlers.utils.state_machine import QuestionStateMachine
@@ -37,9 +37,10 @@ from api.rapid_gpt4_requests import (
     create_user_prompt,
     gpt4_request,
 )
+from handlers.utils.shared import loading_tasks
+from handlers.utils.loading import animate_loading
 
 router = Router()
-loading_tasks = {}
 
 SUBJECT_AREA_NAMES = {
     "languages": "📚 Языки и литература",
@@ -278,7 +279,8 @@ async def finished_test_handler(callback_query: CallbackQuery, state: FSMContext
             theme=theme,
             complexity=complexity,
             format_response=format_response,
-            question_num=question_num, )
+            question_num=question_num,
+        )
     elif mixed_percent is None:
         finished_text = FINISHED_TEST_WITH_ANSWER_NUM.format(
             subject_area=subject_area,
@@ -287,7 +289,8 @@ async def finished_test_handler(callback_query: CallbackQuery, state: FSMContext
             complexity=complexity,
             format_response=format_response,
             answer_num=answer_num,
-            question_num=question_num, )
+            question_num=question_num,
+        )
     else:
         finished_text = FINISHED_TEST_WITH_ANSWER_NUM_AND_PERCENT.format(
             subject_area=subject_area,
@@ -297,7 +300,8 @@ async def finished_test_handler(callback_query: CallbackQuery, state: FSMContext
             format_response=format_response,
             answer_num=answer_num,
             mixed_percent=mixed_percent,
-            question_num=question_num, )
+            question_num=question_num,
+        )
 
     loading_msg = await callback_query.message.edit_text(text="⏳ Генерирую тест")
 
@@ -308,19 +312,42 @@ async def finished_test_handler(callback_query: CallbackQuery, state: FSMContext
     loading_tasks[key] = loading_task
 
     user_prompt = create_user_prompt(data)
-    async with ClientSession() as session:
+    test_json = None
+
+    for attempt in range(3):
         try:
-            response = await gpt4_request(session, user_prompt)
-            test_json = response.get("result", "⚠️ Не удалось получить результат от нейросети.")
-            test_json = test_json.strip('```json\n').strip('\n```')
-            try:
-                test_json = json.loads(test_json)
-            except json.JSONDecodeError:
-                test_json = "❌ Ошибка при обработке данных от нейросети"
+            async with ClientSession() as session:
+                response = await asyncio.wait_for(
+                    gpt4_request(session, user_prompt),
+                    timeout=100
+                )
+                raw_json = response.get("result", "")
+                raw_json = raw_json.strip('```json\n').strip('\n```')
+                test_json = json.loads(raw_json)
 
-        except Exception as e:
-            test_json = f"❌ Ошибка при запросе к нейросети: {e}"
+                if not isinstance(test_json, dict) or "questions" not in test_json:
+                    raise ValueError("Неверная структура JSON")
 
+                break
+
+        except (json.JSONDecodeError, ValueError, TimeoutError, Exception):
+            if attempt < 2:
+                await asyncio.sleep(1)
+                continue
+            else:
+                if key in loading_tasks:
+                    loading_tasks[key].cancel()
+                    try:
+                        await loading_tasks[key]
+                    except asyncio.CancelledError:
+                        pass
+
+                await callback_query.message.edit_text(
+                    ERROR_MESS,
+                    parse_mode="Markdown",
+                    reply_markup=get_new_generate_keyboard(),
+                )
+                return
 
     if key in loading_tasks:
         loading_tasks[key].cancel()
@@ -338,16 +365,4 @@ async def finished_test_handler(callback_query: CallbackQuery, state: FSMContext
     )
 
 
-async def animate_loading(bot, chat_id, message_id, key):
-    dots = [".", "..", "..."]
-    i = 0
-    try:
-        while True:
-            text = f"⏳ Генерирую тест{dots[i % 3]}"
-            await bot.edit_message_text(chat_id=chat_id, message_id=message_id, text=text)
-            i += 1
-            await asyncio.sleep(0.5)
-    except asyncio.CancelledError:
-        pass
-    finally:
-        loading_tasks.pop(key, None)
+

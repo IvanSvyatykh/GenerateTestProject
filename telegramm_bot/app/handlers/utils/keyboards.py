@@ -95,7 +95,7 @@ async def get_question_num_keyboard() -> InlineKeyboardMarkup:
         [InlineKeyboardButton(text="5 вопросов", callback_data="question_num_5")],
         [InlineKeyboardButton(text="10 вопросов", callback_data="question_num_10")],
         [InlineKeyboardButton(text="15 вопросов", callback_data="question_num_15")],
-        [InlineKeyboardButton(text="20 вопросов", callback_data="question_num_15")],
+        [InlineKeyboardButton(text="20 вопросов", callback_data="question_num_20")],
         #[InlineKeyboardButton(text="Ввести вручную", callback_data="ignore")],
     ])
 

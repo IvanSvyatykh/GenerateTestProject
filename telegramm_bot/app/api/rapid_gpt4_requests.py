@@ -11,7 +11,7 @@ async def gpt4_request(session: ClientSession, user_prompt: str) -> dict:
                 "content": user_prompt
             }
         ],
-        "web_access": True
+        "web_access": False
     }
 
     for api_key in GPT4_RAPIDAPI_KEYS:
@@ -28,6 +28,9 @@ async def gpt4_request(session: ClientSession, user_prompt: str) -> dict:
                     return response
                 elif request.status == 429:
                     logging.warning(f"Израсходован ключ: {api_key}, пробую другой")
+                    continue
+                elif request.status == 504:
+                    logging.warning(f"Time out с ключем: {api_key}, пробую другой")
                     continue
                 else:
                     logging.error(f"Error: {request.status} с ключем: {api_key}")
