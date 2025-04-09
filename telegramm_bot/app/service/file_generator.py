@@ -6,7 +6,7 @@ from datetime import datetime
 import json
 
 
-async def generate_docx(test_json, theme, user_id):
+async def generate_docx(test_json, theme, user_id, format_response):
     if isinstance(test_json, str):
         try:
             test_json = json.loads(test_json)
@@ -17,34 +17,38 @@ async def generate_docx(test_json, theme, user_id):
         raise ValueError("test_json должен содержать ключ 'questions'")
 
     questions = test_json['questions']
-
     document = Document()
     document.add_heading(f"Тема теста: {theme}", level=1)
 
     for idx, question in enumerate(questions, 1):
-        if not isinstance(question, dict) or 'question' not in question or 'answers' not in question or 'correct_answer' not in question:
-            raise ValueError("Каждый вопрос должен быть словарем с ключами 'question', 'answers', и 'correct_answer'")
+        q_text = f"{idx}. {question['question']}"
+        document.add_paragraph(q_text)
 
-        document.add_paragraph(f"{idx}. {question['question']}")
-        for answer in question['answers']:
-            document.add_paragraph(f"   - {answer}")
+        if format_response == "✅ Варианты ответов":
+            for answer in question.get('answers', []):
+                document.add_paragraph(f"   - {answer}")
+        elif format_response == "🔀 Смешанный":
+            if question.get("type") == "choice":
+                for answer in question.get('answers', []):
+                    document.add_paragraph(f"   - {answer}")
+            document.add_paragraph("")
+        elif format_response == "📜 Открытые вопросы":
+            document.add_paragraph("")
 
     document.add_page_break()
     document.add_heading("Ответы на тест:", level=1)
+
     for idx, question in enumerate(questions, 1):
         document.add_paragraph(f"{idx}. Ответ: {question['correct_answer']}")
 
-    directory = "./tests/"
-    if not os.path.exists(directory):
-        os.makedirs(directory)
-
     file_path = f"tests/{user_id}_{datetime.now().strftime('%Y%m%d_%H%M%S')}.docx"
+    os.makedirs("tests", exist_ok=True)
     document.save(file_path)
 
     return file_path
 
 
-async def generate_pdf(test_json, theme, user_id):
+async def generate_pdf(test_json, theme, user_id, format_response):
     if isinstance(test_json, str):
         try:
             test_json = json.loads(test_json)
@@ -55,7 +59,6 @@ async def generate_pdf(test_json, theme, user_id):
         raise ValueError("test_json должен содержать ключ 'questions'")
 
     questions = test_json['questions']
-
     pdf = FPDF()
     pdf.add_page()
     pdf.add_font('ArialUnicode', '', 'ttf/Arial-Unicode-Regular.ttf', uni=True)
@@ -65,25 +68,30 @@ async def generate_pdf(test_json, theme, user_id):
 
     for idx, question in enumerate(questions, 1):
         pdf.cell(200, 10, txt=f"{idx}. {question['question']}", ln=True)
-        for answer in question['answers']:
-            pdf.cell(200, 10, txt=f"   - {answer}", ln=True)
+
+        if format_response == "✅ Варианты ответов":
+            for answer in question.get('answers', []):
+                pdf.cell(200, 10, txt=f"   - {answer}", ln=True)
+        elif format_response == "🔀 Смешанный":
+            if question.get("type") == "choice":
+                for answer in question.get('answers', []):
+                    pdf.cell(200, 10, txt=f"   - {answer}", ln=True)
+            pdf.cell(200, 10, txt="", ln=True)
+        elif format_response == "📜 Открытые вопросы":
+            pdf.cell(200, 10, txt="", ln=True)
 
     pdf.add_page()
     pdf.cell(200, 10, txt="Ответы на тест:", ln=True, align="C")
     for idx, question in enumerate(questions, 1):
         pdf.cell(200, 10, txt=f"{idx}. Ответ: {question['correct_answer']}", ln=True)
 
-    directory = "./tests/"
-    if not os.path.exists(directory):
-        os.makedirs(directory)
-
     file_path = f"tests/{user_id}_{datetime.now().strftime('%Y%m%d_%H%M%S')}.pdf"
+    os.makedirs("tests", exist_ok=True)
     pdf.output(file_path)
-
     return file_path
 
 
-async def generate_excel(test_json, theme, user_id):
+async def generate_excel(test_json, theme, user_id, format_response):
     if isinstance(test_json, str):
         try:
             test_json = json.loads(test_json)
@@ -94,27 +102,38 @@ async def generate_excel(test_json, theme, user_id):
         raise ValueError("test_json должен содержать ключ 'questions'")
 
     questions = test_json['questions']
-
     workbook = Workbook()
     sheet = workbook.active
     sheet.title = "Тест"
-
     sheet["A1"] = f"Тема теста: {theme}"
+    row = 2
 
     for idx, question in enumerate(questions, 1):
-        sheet.append([f"{idx}. {question['question']}"])
-        for answer in question['answers']:
-            sheet.append([f"   - {answer}"])
+        sheet.cell(row=row, column=1, value=f"{idx}. {question['question']}")
+        row += 1
 
-    directory = "./tests/"
-    if not os.path.exists(directory):
-        os.makedirs(directory)
+        if format_response == "✅ Варианты ответов":
+            for answer in question.get('answers', []):
+                sheet.cell(row=row, column=1, value=f"   - {answer}")
+                row += 1
+        elif format_response == "🔀 Смешанный":
+            if question.get("type") == "choice":
+                for answer in question.get('answers', []):
+                    sheet.cell(row=row, column=1, value=f"   - {answer}")
+                    row += 1
+            row += 1
+        elif format_response == "📜 Открытые вопросы":
+            row += 1
 
-    sheet.append(["Ответы на тест:"])
+    row += 1
+    sheet.cell(row=row, column=1, value="Ответы на тест:")
+    row += 1
     for idx, question in enumerate(questions, 1):
-        sheet.append([f"{idx}. Ответ: {question['correct_answer']}"])
+        sheet.cell(row=row, column=1, value=f"{idx}. Ответ: {question['correct_answer']}")
+        row += 1
 
     file_path = f"tests/{user_id}_{datetime.now().strftime('%Y%m%d_%H%M%S')}.xlsx"
+    os.makedirs("tests", exist_ok=True)
     workbook.save(file_path)
-
     return file_path
+

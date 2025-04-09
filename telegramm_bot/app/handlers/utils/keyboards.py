@@ -1,5 +1,4 @@
-from aiogram.types import ReplyKeyboardMarkup, KeyboardButton, InlineKeyboardButton, InlineKeyboardMarkup
-from aiogram.utils.keyboard import InlineKeyboardBuilder
+from aiogram.types import InlineKeyboardButton, InlineKeyboardMarkup
 
 SUBJECT_AREAS = {
     "languages": [
@@ -82,11 +81,10 @@ async def get_complexity_keyboard() -> InlineKeyboardMarkup:
 
 
 async def get_format_response_keyboard() -> InlineKeyboardMarkup:
-    # Надо изменить промт для этих функций
     return InlineKeyboardMarkup(inline_keyboard=[
-        #[InlineKeyboardButton(text="📜 Открытые вопросы", callback_data="format_open")],
+        [InlineKeyboardButton(text="📜 Открытые вопросы", callback_data="format_open")],
         [InlineKeyboardButton(text="✅ Варианты ответов", callback_data="format_choices")],
-        #[InlineKeyboardButton(text="🔀 Смешанный", callback_data="format_mixed")],
+        [InlineKeyboardButton(text="🔀 Смешанный", callback_data="format_mixed")],
     ])
 
 

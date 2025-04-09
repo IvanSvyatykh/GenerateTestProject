@@ -4,6 +4,12 @@ from aiogram import Router, types, F
 from aiogram.fsm.context import FSMContext
 from aiogram.types import CallbackQuery
 from aiohttp import ClientSession
+from handlers.utils.state_machine import QuestionStateMachine
+from api.utils.promt_builder import create_user_prompt
+from api.utils.response_validate import validate_json
+from api.rapid_gpt4_requests import gpt4_request
+from handlers.utils.shared import loading_tasks
+from handlers.utils.loading import animate_loading
 from handlers.utils.answers import (
     ERROR_MESS,
     CHOOSE_SUBJECT_AREA,
@@ -31,14 +37,7 @@ from handlers.utils.keyboards import (
     get_area_keyboard,
     get_new_generate_keyboard,
 )
-from service.generate_test import generate_test, TEMPLATE
-from handlers.utils.state_machine import QuestionStateMachine
-from api.rapid_gpt4_requests import (
-    create_user_prompt,
-    gpt4_request,
-)
-from handlers.utils.shared import loading_tasks
-from handlers.utils.loading import animate_loading
+
 
 router = Router()
 
@@ -312,42 +311,7 @@ async def finished_test_handler(callback_query: CallbackQuery, state: FSMContext
     loading_tasks[key] = loading_task
 
     user_prompt = create_user_prompt(data)
-    test_json = None
-
-    for attempt in range(3):
-        try:
-            async with ClientSession() as session:
-                response = await asyncio.wait_for(
-                    gpt4_request(session, user_prompt),
-                    timeout=100
-                )
-                raw_json = response.get("result", "")
-                raw_json = raw_json.strip('```json\n').strip('\n```')
-                test_json = json.loads(raw_json)
-
-                if not isinstance(test_json, dict) or "questions" not in test_json:
-                    raise ValueError("Неверная структура JSON")
-
-                break
-
-        except (json.JSONDecodeError, ValueError, TimeoutError, Exception):
-            if attempt < 2:
-                await asyncio.sleep(1)
-                continue
-            else:
-                if key in loading_tasks:
-                    loading_tasks[key].cancel()
-                    try:
-                        await loading_tasks[key]
-                    except asyncio.CancelledError:
-                        pass
-
-                await callback_query.message.edit_text(
-                    ERROR_MESS,
-                    parse_mode="Markdown",
-                    reply_markup=get_new_generate_keyboard(),
-                )
-                return
+    response = await gpt4_request(user_prompt, format_response)
 
     if key in loading_tasks:
         loading_tasks[key].cancel()
@@ -356,13 +320,18 @@ async def finished_test_handler(callback_query: CallbackQuery, state: FSMContext
         except asyncio.CancelledError:
             pass
 
-    await state.update_data(test_json=test_json)
+    if "error" in response:
+        await state.clear()
+        await callback_query.message.edit_text(
+            ERROR_MESS,
+            parse_mode="Markdown",
+            reply_markup=get_new_generate_keyboard(),
+        )
+
+    await state.update_data(test_json=response)
     await state.set_state(QuestionStateMachine.file_format)
     await callback_query.message.edit_text(
         text=finished_text,
         parse_mode="Markdown",
         reply_markup=await get_file_format_keyboard(),
     )
-
-
-

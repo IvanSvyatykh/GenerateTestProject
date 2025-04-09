@@ -20,13 +20,14 @@ async def file_format_handler(callback_query: CallbackQuery, state: FSMContext):
     data = await state.get_data()
     test_json = data.get("test_json")
     theme = data.get("theme")
+    format_response = data.get("format_response")
 
     if file_format == "docx":
-        file_path = await generate_docx(test_json, theme, callback_query.from_user.id)
+        file_path = await generate_docx(test_json, theme, callback_query.from_user.id, format_response)
     elif file_format == "pdf":
-        file_path = await generate_pdf(test_json, theme, callback_query.from_user.id)
+        file_path = await generate_pdf(test_json, theme, callback_query.from_user.id, format_response)
     elif file_format == "excel":
-        file_path = await generate_excel(test_json, theme, callback_query.from_user.id)
+        file_path = await generate_excel(test_json, theme, callback_query.from_user.id, format_response)
 
     with open(file_path, 'rb'):
         document = FSInputFile(file_path, filename=os.path.basename(file_path))
