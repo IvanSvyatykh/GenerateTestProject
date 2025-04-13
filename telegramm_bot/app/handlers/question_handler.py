@@ -354,7 +354,7 @@ async def finished_test_handler(callback_query: CallbackQuery, state: FSMContext
         await callback_query.message.edit_text(
             ERROR_MESS,
             parse_mode="Markdown",
-            reply_markup=get_new_generate_keyboard(),
+            reply_markup=await get_new_generate_keyboard(),
         )
 
     await state.update_data(test_json=response)
