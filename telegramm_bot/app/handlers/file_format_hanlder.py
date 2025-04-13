@@ -45,10 +45,15 @@ async def file_format_handler(callback_query: CallbackQuery, state: FSMContext):
     print("Log to db")
     async with get_async_session() as db_session:
         print("start logging...")
+        subject = (
+            data.get("subject")
+            if data.get("subject") is not None
+            else data.get("manual_subject")
+        )
         logs_repo = BotLogsRepository(db_session)
         log = {
             "user_id": callback_query.from_user.id,
-            "test_theme": data.get("subject_area"),
+            "test_theme": subject,
             "test_name": data.get("theme"),
             "generation_time": int(data.get("generation_time")),
             "question_num": int(data.get("answer_num")),
