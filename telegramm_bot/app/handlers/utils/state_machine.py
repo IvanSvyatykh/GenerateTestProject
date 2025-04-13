@@ -13,3 +13,4 @@ class QuestionStateMachine(StatesGroup):
     percent_format_response = State()
     answer_num = State()
     file_format = State()
+    generation_time = State()

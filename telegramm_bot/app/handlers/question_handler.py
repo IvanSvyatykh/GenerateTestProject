@@ -10,6 +10,7 @@ from api.utils.response_validate import validate_json
 from api.rapid_gpt4_requests import gpt4_request
 from handlers.utils.shared import loading_tasks
 from handlers.utils.loading import animate_loading
+from time import time
 from handlers.utils.answers import (
     ERROR_MESS,
     CHOOSE_SUBJECT_AREA,
@@ -48,7 +49,7 @@ SUBJECT_AREA_NAMES = {
     "science": "🔬 Естественные науки",
     "art": "🎨 Искусство и культура",
     "tech": "🛠️ Технология",
-    "personal": "🧠 Личностное развитие"
+    "personal": "🧠 Личностное развитие",
 }
 
 
@@ -59,11 +60,13 @@ async def new_test_handler(callback_query: CallbackQuery, state: FSMContext):
     await callback_query.message.answer(
         text=CHOOSE_SUBJECT_AREA,
         parse_mode="Markdown",
-        reply_markup=await get_area_keyboard()
+        reply_markup=await get_area_keyboard(),
     )
 
 
-@router.callback_query(lambda c: c.data.startswith("area_"), QuestionStateMachine.subject_area)
+@router.callback_query(
+    lambda c: c.data.startswith("area_"), QuestionStateMachine.subject_area
+)
 async def subject_area_handler(callback_query: CallbackQuery, state: FSMContext):
     subject_area = callback_query.data.split("_")[1]
     await state.update_data(subject_area=SUBJECT_AREA_NAMES[subject_area])
@@ -76,7 +79,9 @@ async def subject_area_handler(callback_query: CallbackQuery, state: FSMContext)
     )
 
 
-@router.callback_query(lambda c: c.data.startswith("subject_"), QuestionStateMachine.subject)
+@router.callback_query(
+    lambda c: c.data.startswith("subject_"), QuestionStateMachine.subject
+)
 async def choose_subject_handler(callback_query: CallbackQuery, state: FSMContext):
     data = await state.get_data()
     subject_area = data.get("subject_area")
@@ -88,9 +93,7 @@ async def choose_subject_handler(callback_query: CallbackQuery, state: FSMContex
 
     await state.set_state(QuestionStateMachine.theme)
     await callback_query.message.edit_text(
-        text=CHOOSE_THEME.format(
-            subject_area=subject_area,
-            subject=subject),
+        text=CHOOSE_THEME.format(subject_area=subject_area, subject=subject),
         parse_mode="Markdown",
     )
 
@@ -111,15 +114,16 @@ async def choose_theme_handler(message: types.Message, state: FSMContext):
     await state.set_state(QuestionStateMachine.complexity)
     await message.answer(
         text=CHOOSE_COMPLEXITY.format(
-            subject_area=subject_area,
-            subject=subject,
-            theme=theme),
+            subject_area=subject_area, subject=subject, theme=theme
+        ),
         parse_mode="Markdown",
         reply_markup=await get_complexity_keyboard(),
     )
 
 
-@router.callback_query(lambda c: c.data.startswith("complexity_"), QuestionStateMachine.complexity)
+@router.callback_query(
+    lambda c: c.data.startswith("complexity_"), QuestionStateMachine.complexity
+)
 async def choose_complexity_handler(callback_query: CallbackQuery, state: FSMContext):
     data = await state.get_data()
     subject_area = data.get("subject_area")
@@ -129,7 +133,7 @@ async def choose_complexity_handler(callback_query: CallbackQuery, state: FSMCon
     complexity_names = {
         "easy": "🔹 Легкий",
         "medium": "🔸 Средний",
-        "hard": "🔺 Сложный"
+        "hard": "🔺 Сложный",
     }
 
     complexity = callback_query.data.split("_")[1]
@@ -141,14 +145,19 @@ async def choose_complexity_handler(callback_query: CallbackQuery, state: FSMCon
             subject_area=subject_area,
             subject=subject,
             theme=theme,
-            complexity=complexity_names[complexity]),
+            complexity=complexity_names[complexity],
+        ),
         parse_mode="Markdown",
         reply_markup=await get_format_response_keyboard(),
     )
 
 
-@router.callback_query(lambda c: c.data.startswith("format_"), QuestionStateMachine.format_response)
-async def choose_format_response_handler(callback_query: CallbackQuery, state: FSMContext):
+@router.callback_query(
+    lambda c: c.data.startswith("format_"), QuestionStateMachine.format_response
+)
+async def choose_format_response_handler(
+    callback_query: CallbackQuery, state: FSMContext
+):
     data = await state.get_data()
     subject_area = data.get("subject_area")
     subject = data.get("subject")
@@ -158,7 +167,7 @@ async def choose_format_response_handler(callback_query: CallbackQuery, state: F
     format_names = {
         "open": "📜 Открытые вопросы",
         "choices": "✅ Варианты ответов",
-        "mixed": "🔀 Смешанный"
+        "mixed": "🔀 Смешанный",
     }
 
     format_response = callback_query.data.split("_")[1]
@@ -172,7 +181,8 @@ async def choose_format_response_handler(callback_query: CallbackQuery, state: F
                 subject=subject,
                 theme=theme,
                 complexity=complexity,
-                format_response=format_names[format_response]),
+                format_response=format_names[format_response],
+            ),
             parse_mode="Markdown",
             reply_markup=await get_question_num_keyboard(),
         )
@@ -184,14 +194,19 @@ async def choose_format_response_handler(callback_query: CallbackQuery, state: F
                 subject=subject,
                 theme=theme,
                 complexity=complexity,
-                format_response=format_names[format_response]),
+                format_response=format_names[format_response],
+            ),
             parse_mode="Markdown",
             reply_markup=await get_answer_question_num_keyboard(),
         )
 
 
-@router.callback_query(lambda c: c.data.startswith("answer_question_num_"), QuestionStateMachine.answer_num)
-async def choose_answer_question_num_handler(callback_query: CallbackQuery, state: FSMContext):
+@router.callback_query(
+    lambda c: c.data.startswith("answer_question_num_"), QuestionStateMachine.answer_num
+)
+async def choose_answer_question_num_handler(
+    callback_query: CallbackQuery, state: FSMContext
+):
     data = await state.get_data()
     subject_area = data.get("subject_area")
     subject = data.get("subject")
@@ -210,7 +225,8 @@ async def choose_answer_question_num_handler(callback_query: CallbackQuery, stat
                 theme=theme,
                 complexity=complexity,
                 format_response=format_response,
-                answer_num=answer_num),
+                answer_num=answer_num,
+            ),
             parse_mode="Markdown",
             reply_markup=await get_question_num_keyboard(),
         )
@@ -223,14 +239,20 @@ async def choose_answer_question_num_handler(callback_query: CallbackQuery, stat
                 theme=theme,
                 complexity=complexity,
                 format_response=format_response,
-                answer_num=answer_num),
+                answer_num=answer_num,
+            ),
             parse_mode="Markdown",
             reply_markup=await get_mixed_format_keyboard(),
         )
 
 
-@router.callback_query(lambda c: c.data.startswith("mixed_percent_"), QuestionStateMachine.percent_format_response)
-async def choose_mixed_percent_handler(callback_query: CallbackQuery, state: FSMContext):
+@router.callback_query(
+    lambda c: c.data.startswith("mixed_percent_"),
+    QuestionStateMachine.percent_format_response,
+)
+async def choose_mixed_percent_handler(
+    callback_query: CallbackQuery, state: FSMContext
+):
     data = await state.get_data()
     subject_area = data.get("subject_area")
     subject = data.get("subject")
@@ -251,13 +273,16 @@ async def choose_mixed_percent_handler(callback_query: CallbackQuery, state: FSM
             complexity=complexity,
             format_response=format_response,
             answer_num=answer_num,
-            mixed_percent=mixed_percent),
+            mixed_percent=mixed_percent,
+        ),
         parse_mode="Markdown",
         reply_markup=await get_question_num_keyboard(),
     )
 
 
-@router.callback_query(lambda c: c.data.startswith("question_num_"), QuestionStateMachine.question_num)
+@router.callback_query(
+    lambda c: c.data.startswith("question_num_"), QuestionStateMachine.question_num
+)
 async def finished_test_handler(callback_query: CallbackQuery, state: FSMContext):
     await state.update_data(question_num=callback_query.data.split("_")[2])
     data = await state.get_data()
@@ -306,13 +331,17 @@ async def finished_test_handler(callback_query: CallbackQuery, state: FSMContext
 
     key = f"{callback_query.from_user.id}_{loading_msg.message_id}"
     loading_task = asyncio.create_task(
-        animate_loading(callback_query.bot, loading_msg.chat.id, loading_msg.message_id, key)
+        animate_loading(
+            callback_query.bot, loading_msg.chat.id, loading_msg.message_id, key
+        )
     )
     loading_tasks[key] = loading_task
 
     user_prompt = create_user_prompt(data)
+    start = time()
     response = await gpt4_request(user_prompt, format_response)
-
+    end = time()
+    await state.update_data(generation_time=int(end - start))
     if key in loading_tasks:
         loading_tasks[key].cancel()
         try:

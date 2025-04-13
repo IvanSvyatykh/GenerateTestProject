@@ -8,3 +8,6 @@
 *.safetensors
 *.pyc
 /docker_volumes
+*.pdf
+*.docx
+*.xlsx
