@@ -27,6 +27,7 @@ async def file_format_handler(callback_query: CallbackQuery, state: FSMContext):
     test_json = data.get("test_json")
     theme = data.get("theme")
     format_response = data.get("format_response")
+
     if file_format == "docx":
         file_path = await generate_docx(
             test_json, theme, callback_query.from_user.id, format_response
@@ -56,7 +57,7 @@ async def file_format_handler(callback_query: CallbackQuery, state: FSMContext):
             "test_theme": subject,
             "test_name": data.get("theme"),
             "generation_time": int(data.get("generation_time")),
-            "question_num": int(data.get("answer_num")),
+            "question_num": int(data.get("question_num")),
             "date": datetime.now(),
         }
         await logs_repo.add_log(log)
