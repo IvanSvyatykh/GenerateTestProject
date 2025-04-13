@@ -45,25 +45,30 @@ async def gpt4_request(user_prompt: str, format_response: str) -> dict:
                             return test_json
 
                         except (json.JSONDecodeError, ValueError) as e:
+                            print(response.get("result", ""))
                             logging.warning(f"Ошибка в структуре JSON: {e}, пробую снова.")
                             break
 
                 except asyncio.TimeoutError:
+                    print(response.get("result", ""))
                     logging.warning(f"Тайм-аут при запросе с ключом {api_key}, пробую снова.")
                     continue
 
                 if request.status == 429:
+                    print(response.get("result", ""))
                     logging.warning(f"Израсходован ключ: {api_key}, пробую другой")
                     continue
                 elif request.status == 504:
-                    print("pochemy kak")
+                    print(response.get("result", ""))
                     logging.warning(f"Time out с ключом: {api_key}, пробую другой")
                     continue
                 else:
+                    print(response.get("result", ""))
                     logging.error(f"Error: {request.status} с ключом: {api_key}")
                     continue
 
         except Exception as e:
+            print(response.get("result", ""))
             logging.exception(f"Ошибка при запросе с ключом {api_key}: {e}")
             continue
 

@@ -356,6 +356,7 @@ async def finished_test_handler(callback_query: CallbackQuery, state: FSMContext
             parse_mode="Markdown",
             reply_markup=await get_new_generate_keyboard(),
         )
+        return
 
     await state.update_data(test_json=response)
     await state.set_state(QuestionStateMachine.file_format)
