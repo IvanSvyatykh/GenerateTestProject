@@ -2,17 +2,37 @@ version: '3.7'
 
 services:
   postgres:
-    image: postgres
+    container_name: postgres
+    image: postgres:17
     restart: always
-    environment:
-      POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: postgres
-      POSTGRES_DB: postgres
+    env_file:
+      - .env
     ports:
-      - "8432:5432"
+      - ${POSTGRES_PORT}:${POSTGRES_PORT}
+    networks:
+      - generate_test
     volumes:
       - postgres_data:/var/lib/postgresql/data
 
 
+  minio:
+    image: minio/minio:latest
+    container_name: minio
+    env_file:
+      - .env
+    ports:
+      - ${MINIO_API_PORT}:9000 # MinIO API
+      - ${MINIO_WEB_UI_PORT}:9001 # MinIO Web UI
+    volumes:
+      - minio_data:/data/s3
+    networks:
+      - generate_test
+    command: server /data/s3 --console-address ":9001"
+
+
 volumes:
   postgres_data:
+
+networks:
+  generate_test:
+    driver: bridge
