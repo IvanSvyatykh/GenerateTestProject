@@ -25,12 +25,12 @@ async def generate_docx(test_json, theme, user_id, format_response):
         document.add_paragraph(q_text)
 
         if format_response == "✅ Варианты ответов":
-            for answer in question.get('answers', []):
-                document.add_paragraph(f"   - {answer}")
+            for index, answer in enumerate(question.get('answers', []), 1):
+                document.add_paragraph(f"   {index}. {answer}")
         elif format_response == "🔀 Смешанный":
             if question.get("type") == "choice":
-                for answer in question.get('answers', []):
-                    document.add_paragraph(f"   - {answer}")
+                for index, answer in enumerate(question.get('answers', []), 1):
+                    document.add_paragraph(f"   {index}. {answer}")
             document.add_paragraph("")
         elif format_response == "📜 Открытые вопросы":
             document.add_paragraph("")
@@ -39,7 +39,7 @@ async def generate_docx(test_json, theme, user_id, format_response):
     document.add_heading("Ответы на тест:", level=1)
 
     for idx, question in enumerate(questions, 1):
-        document.add_paragraph(f"{idx}. Ответ: {question['correct_answer']}")
+        document.add_paragraph(f"{idx}. {question['correct_answer']}")
 
     file_path = f"tests/{user_id}_{datetime.now().strftime('%Y%m%d_%H%M%S')}.docx"
     os.makedirs("tests", exist_ok=True)
@@ -70,12 +70,12 @@ async def generate_pdf(test_json, theme, user_id, format_response):
         pdf.cell(200, 10, txt=f"{idx}. {question['question']}", ln=True)
 
         if format_response == "✅ Варианты ответов":
-            for answer in question.get('answers', []):
-                pdf.cell(200, 10, txt=f"   - {answer}", ln=True)
+            for index, answer in enumerate(question.get('answers', []), 1):
+                pdf.cell(200, 10, txt=f"   {index}. {answer}", ln=True)
         elif format_response == "🔀 Смешанный":
             if question.get("type") == "choice":
-                for answer in question.get('answers', []):
-                    pdf.cell(200, 10, txt=f"   - {answer}", ln=True)
+                for index, answer in enumerate(question.get('answers', []), 1):
+                    pdf.cell(200, 10, txt=f"   {index}. {answer}", ln=True)
             pdf.cell(200, 10, txt="", ln=True)
         elif format_response == "📜 Открытые вопросы":
             pdf.cell(200, 10, txt="", ln=True)
@@ -83,7 +83,7 @@ async def generate_pdf(test_json, theme, user_id, format_response):
     pdf.add_page()
     pdf.cell(200, 10, txt="Ответы на тест:", ln=True, align="C")
     for idx, question in enumerate(questions, 1):
-        pdf.cell(200, 10, txt=f"{idx}. Ответ: {question['correct_answer']}", ln=True)
+        pdf.cell(200, 10, txt=f"{idx}. {question['correct_answer']}", ln=True)
 
     file_path = f"tests/{user_id}_{datetime.now().strftime('%Y%m%d_%H%M%S')}.pdf"
     os.makedirs("tests", exist_ok=True)
@@ -113,13 +113,13 @@ async def generate_excel(test_json, theme, user_id, format_response):
         row += 1
 
         if format_response == "✅ Варианты ответов":
-            for answer in question.get('answers', []):
-                sheet.cell(row=row, column=1, value=f"   - {answer}")
+            for index, answer in enumerate(question.get('answers', []), 1):
+                sheet.cell(row=row, column=1, value=f"   {index}. {answer}")
                 row += 1
         elif format_response == "🔀 Смешанный":
             if question.get("type") == "choice":
-                for answer in question.get('answers', []):
-                    sheet.cell(row=row, column=1, value=f"   - {answer}")
+                for index, answer in enumerate(question.get('answers', []), 1):
+                    sheet.cell(row=row, column=1, value=f"   {index}. {answer}")
                     row += 1
             row += 1
         elif format_response == "📜 Открытые вопросы":
@@ -129,7 +129,7 @@ async def generate_excel(test_json, theme, user_id, format_response):
     sheet.cell(row=row, column=1, value="Ответы на тест:")
     row += 1
     for idx, question in enumerate(questions, 1):
-        sheet.cell(row=row, column=1, value=f"{idx}. Ответ: {question['correct_answer']}")
+        sheet.cell(row=row, column=1, value=f"{idx}. {question['correct_answer']}")
         row += 1
 
     file_path = f"tests/{user_id}_{datetime.now().strftime('%Y%m%d_%H%M%S')}.xlsx"

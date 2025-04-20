@@ -28,6 +28,7 @@ async def gpt4_request(user_prompt: str, format_response: str) -> dict:
         try:
             async with ClientSession() as session:
                 try:
+                    print(f"Пробую ключ: {api_key}")
                     async with session.post(url=GPT4_API_URL, headers=headers, json=payload) as request:
                         response = await request.json()
 
@@ -47,7 +48,7 @@ async def gpt4_request(user_prompt: str, format_response: str) -> dict:
                         except (json.JSONDecodeError, ValueError) as e:
                             print(response.get("result", ""))
                             logging.warning(f"Ошибка в структуре JSON: {e}, пробую снова.")
-                            break
+                            continue
 
                 except asyncio.TimeoutError:
                     print(response.get("result", ""))
