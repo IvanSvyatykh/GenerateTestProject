@@ -43,6 +43,41 @@ SUBJECT_AREAS = {
     ],
 }
 
+SUBJECT_GRADES = {
+    "🇷🇺 Русский язык": list(range(1, 12 + 1)),
+    "📖 Литература": list(range(5, 12 + 1)),
+    "🇬🇧 Английский язык": list(range(2, 11 + 1)),
+    "🇩🇪 Немецкий язык": list(range(5, 11 + 1)),
+    "🇫🇷 Французский язык": list(range(5, 11 + 1)),
+
+    "➕ Математика": list(range(1, 6)),
+    "📐 Алгебра": list(range(7, 11 + 1)),
+    "📏 Геометрия": list(range(7, 11 + 1)),
+    "💻 Информатика": list(range(7, 11 + 1)),
+
+    "📜 История": list(range(5, 11 + 1)),
+    "🏛️ Обществознание": list(range(6, 11 + 1)),
+    "⚖️ Право": list(range(9, 11 + 1)),
+    "💰 Экономика": list(range(9, 11 + 1)),
+
+    "🔌 Физика": list(range(7, 11 + 1)),
+    "⚗️ Химия": list(range(8, 11 + 1)),
+    "🧬 Биология": list(range(5, 11 + 1)),
+    "🗺️ География": list(range(5, 10 + 1)),
+    "🌌 Астрономия": [10, 11],
+
+    "🎼 Музыка": list(range(1, 7 + 1)),
+    "🖼️ ИЗО": list(range(1, 7 + 1)),
+    "🌐 МХК": [10, 11],
+
+    "🔧 Технология": list(range(5, 9 + 1)),
+    "🤖 Робототехника": list(range(5, 11 + 1)),
+    "🪚 Труд": list(range(1, 4 + 1)),
+
+    "🚨 ОБЖ": list(range(8, 11 + 1)),
+    "🕊️ ОРКИСЭ": [4],
+}
+
 
 async def get_new_generate_keyboard() -> InlineKeyboardMarkup:
     return InlineKeyboardMarkup(inline_keyboard=[
@@ -72,12 +107,31 @@ async def get_subject_keyboard(area_key: str) -> InlineKeyboardMarkup:
     return InlineKeyboardMarkup(inline_keyboard=keyboard)
 
 
-async def get_complexity_keyboard() -> InlineKeyboardMarkup:
-    return InlineKeyboardMarkup(inline_keyboard=[
-        [InlineKeyboardButton(text="🔹 Легкий", callback_data="complexity_easy")],
-        [InlineKeyboardButton(text="🔸 Средний", callback_data="complexity_medium")],
-        [InlineKeyboardButton(text="🔺 Сложный", callback_data="complexity_hard")],
-    ])
+async def get_class_keyboard(subject: str) -> InlineKeyboardMarkup:
+    available_classes = SUBJECT_GRADES.get(subject, list(range(1, 12 + 1)))
+
+    sections = {
+        "Начальная школа": [1, 2, 3, 4],
+        "Средняя школа": [5, 6, 7, 8, 9],
+        "Старшая школа": [10, 11],
+    }
+
+    keyboard = []
+    for section, grades in sections.items():
+        intersection = [g for g in grades if g in available_classes]
+        if not intersection:
+            continue
+        keyboard.append([InlineKeyboardButton(text=section, callback_data=f"grade_block_{section}")])
+        row = []
+        for i, grade in enumerate(intersection, 1):
+            row.append(InlineKeyboardButton(text=f"{grade} кл.", callback_data=f"grade_{grade}"))
+            if i % 2 == 0:
+                keyboard.append(row)
+                row = []
+        if row:
+            keyboard.append(row)
+    keyboard.append([InlineKeyboardButton(text="✍🏻 Ввести сложность вручную", callback_data=f"manual_grade")])
+    return InlineKeyboardMarkup(inline_keyboard=keyboard)
 
 
 async def get_format_response_keyboard() -> InlineKeyboardMarkup:

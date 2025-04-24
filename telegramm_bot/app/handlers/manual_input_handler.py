@@ -1,11 +1,15 @@
 from aiogram import Router, types, F
 from aiogram.fsm.context import FSMContext
 from aiogram.types import CallbackQuery
+
+from handlers.utils.keyboards import get_format_response_keyboard
 from handlers.utils.state_machine import QuestionStateMachine
 from handlers.utils.answers import (
     MANUAL_AREA,
     MANUAL_SUBJECT,
+    MANUAL_GRADE,
     CHOOSE_THEME,
+    CHOOSE_FORMAT_RESPONSE,
 )
 
 router = Router()
@@ -63,3 +67,51 @@ async def input_subject_handler(message: types.Message, state: FSMContext):
     )
     await state.update_data(bot_message_id=bot_message.message_id)
 
+
+@router.callback_query(lambda c: c.data == "manual_grade", QuestionStateMachine.grade)
+async def manual_grade_handler(callback_query: CallbackQuery, state: FSMContext):
+    data = await state.get_data()
+    subject_area = data.get("subject_area")
+    subject = data.get("subject")
+    theme = data.get("theme")
+    await state.set_state(QuestionStateMachine.manual_grade)
+    await state.update_data(bot_message_id=callback_query.message.message_id)
+
+    await callback_query.message.edit_text(
+        text=MANUAL_GRADE.format(
+            subject_area=subject_area,
+            subject=subject,
+            theme=theme
+        ),
+        parse_mode="Markdown",
+    )
+
+
+@router.message(F.text, QuestionStateMachine.manual_grade)
+async def input_subject_handler(message: types.Message, state: FSMContext):
+    data = await state.get_data()
+    subject_area = data.get("subject_area")
+    subject = data.get("subject")
+    theme = data.get("theme")
+
+    grade = message.text
+    await state.update_data(grade=grade)
+
+    bot_message_id = data.get("bot_message_id")
+    try:
+        await message.bot.delete_message(chat_id=message.chat.id, message_id=bot_message_id)
+    except Exception as e:
+        print(f"⚠️ Не удалось удалить сообщение бота: {e}. {bot_message_id}")
+    await message.delete()
+
+    await state.set_state(QuestionStateMachine.format_response)
+    await message.answer(
+        text=CHOOSE_FORMAT_RESPONSE.format(
+            subject_area=subject_area,
+            subject=subject,
+            theme=theme,
+            grade=grade,
+        ),
+        parse_mode="Markdown",
+        reply_markup=await get_format_response_keyboard()
+    )

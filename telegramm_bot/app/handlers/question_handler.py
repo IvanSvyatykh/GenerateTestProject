@@ -1,22 +1,19 @@
 import asyncio
-import json
+from time import time
 from aiogram import Router, types, F
 from aiogram.fsm.context import FSMContext
 from aiogram.types import CallbackQuery
-from aiohttp import ClientSession
 from handlers.utils.state_machine import QuestionStateMachine
 from api.utils.promt_builder import create_user_prompt
-from api.utils.response_validate import validate_json
 from api.rapid_gpt4_requests import gpt4_request
 from handlers.utils.shared import loading_tasks
 from handlers.utils.loading import animate_loading
-from time import time
 from handlers.utils.answers import (
     ERROR_MESS,
     CHOOSE_SUBJECT_AREA,
     CHOOSE_SUBJECT,
     CHOOSE_THEME,
-    CHOOSE_COMPLEXITY,
+    CHOOSE_GRADE,
     CHOOSE_FORMAT_RESPONSE,
     CHOOSE_QUESTION_NUM,
     CHOOSE_ANSWER_NUM,
@@ -29,7 +26,7 @@ from handlers.utils.answers import (
 )
 from handlers.utils.keyboards import (
     get_subject_keyboard,
-    get_complexity_keyboard,
+    get_class_keyboard,
     get_format_response_keyboard,
     get_question_num_keyboard,
     get_answer_question_num_keyboard,
@@ -111,33 +108,31 @@ async def choose_theme_handler(message: types.Message, state: FSMContext):
     await message.bot.delete_message(chat_id=message.chat.id, message_id=bot_message_id)
     await message.delete()
 
-    await state.set_state(QuestionStateMachine.complexity)
+    await state.set_state(QuestionStateMachine.grade)
     await message.answer(
-        text=CHOOSE_COMPLEXITY.format(
-            subject_area=subject_area, subject=subject, theme=theme
+        text=CHOOSE_GRADE.format(
+            subject_area=subject_area,
+            subject=subject,
+            theme=theme
         ),
         parse_mode="Markdown",
-        reply_markup=await get_complexity_keyboard(),
+        reply_markup=await get_class_keyboard(subject_area),
     )
 
 
-@router.callback_query(
-    lambda c: c.data.startswith("complexity_"), QuestionStateMachine.complexity
-)
-async def choose_complexity_handler(callback_query: CallbackQuery, state: FSMContext):
+@router.callback_query(lambda c: c.data.startswith("grade_"), QuestionStateMachine.grade)
+async def choose_grade_handler(callback_query: CallbackQuery, state: FSMContext):
     data = await state.get_data()
     subject_area = data.get("subject_area")
     subject = data.get("subject")
     theme = data.get("theme")
 
-    complexity_names = {
-        "easy": "🔹 Легкий",
-        "medium": "🔸 Средний",
-        "hard": "🔺 Сложный",
-    }
+    if len(callback_query.data.split("_")) == 3:
+        grade = callback_query.data.split("_")[2]
+    else:
+        grade = callback_query.data.split("_")[1] + " класс"
 
-    complexity = callback_query.data.split("_")[1]
-    await state.update_data(complexity=complexity_names[complexity])
+    await state.update_data(grade=grade)
 
     await state.set_state(QuestionStateMachine.format_response)
     await callback_query.message.edit_text(
@@ -145,7 +140,7 @@ async def choose_complexity_handler(callback_query: CallbackQuery, state: FSMCon
             subject_area=subject_area,
             subject=subject,
             theme=theme,
-            complexity=complexity_names[complexity],
+            grade=grade,
         ),
         parse_mode="Markdown",
         reply_markup=await get_format_response_keyboard(),
@@ -162,7 +157,7 @@ async def choose_format_response_handler(
     subject_area = data.get("subject_area")
     subject = data.get("subject")
     theme = data.get("theme")
-    complexity = data.get("complexity")
+    grade = data.get("grade")
 
     format_names = {
         "open": "📜 Открытые вопросы",
@@ -180,7 +175,7 @@ async def choose_format_response_handler(
                 subject_area=subject_area,
                 subject=subject,
                 theme=theme,
-                complexity=complexity,
+                grade=grade,
                 format_response=format_names[format_response],
             ),
             parse_mode="Markdown",
@@ -193,7 +188,7 @@ async def choose_format_response_handler(
                 subject_area=subject_area,
                 subject=subject,
                 theme=theme,
-                complexity=complexity,
+                grade=grade,
                 format_response=format_names[format_response],
             ),
             parse_mode="Markdown",
@@ -211,7 +206,7 @@ async def choose_answer_question_num_handler(
     subject_area = data.get("subject_area")
     subject = data.get("subject")
     theme = data.get("theme")
-    complexity = data.get("complexity")
+    grade = data.get("grade")
     format_response = data.get("format_response")
 
     answer_num = callback_query.data.split("_")[3]
@@ -223,7 +218,7 @@ async def choose_answer_question_num_handler(
                 subject_area=subject_area,
                 subject=subject,
                 theme=theme,
-                complexity=complexity,
+                grade=grade,
                 format_response=format_response,
                 answer_num=answer_num,
             ),
@@ -237,7 +232,7 @@ async def choose_answer_question_num_handler(
                 subject_area=subject_area,
                 subject=subject,
                 theme=theme,
-                complexity=complexity,
+                grade=grade,
                 format_response=format_response,
                 answer_num=answer_num,
             ),
@@ -257,7 +252,7 @@ async def choose_mixed_percent_handler(
     subject_area = data.get("subject_area")
     subject = data.get("subject")
     theme = data.get("theme")
-    complexity = data.get("complexity")
+    grade = data.get("grade")
     format_response = data.get("format_response")
     answer_num = data.get("answer_num")
 
@@ -270,7 +265,7 @@ async def choose_mixed_percent_handler(
             subject_area=subject_area,
             subject=subject,
             theme=theme,
-            complexity=complexity,
+            grade=grade,
             format_response=format_response,
             answer_num=answer_num,
             mixed_percent=mixed_percent,
@@ -280,9 +275,7 @@ async def choose_mixed_percent_handler(
     )
 
 
-@router.callback_query(
-    lambda c: c.data.startswith("question_num_"), QuestionStateMachine.question_num
-)
+@router.callback_query(lambda c: c.data.startswith("question_num_"), QuestionStateMachine.question_num)
 async def finished_test_handler(callback_query: CallbackQuery, state: FSMContext):
     await state.update_data(question_num=callback_query.data.split("_")[2])
     data = await state.get_data()
@@ -290,7 +283,7 @@ async def finished_test_handler(callback_query: CallbackQuery, state: FSMContext
     subject_area = data.get("subject_area")
     subject = data.get("subject")
     theme = data.get("theme")
-    complexity = data.get("complexity")
+    grade = data.get("grade")
     format_response = data.get("format_response")
     answer_num = data.get("answer_num")
     mixed_percent = data.get("mixed_percent")
@@ -301,7 +294,7 @@ async def finished_test_handler(callback_query: CallbackQuery, state: FSMContext
             subject_area=subject_area,
             subject=subject,
             theme=theme,
-            complexity=complexity,
+            grade=grade,
             format_response=format_response,
             question_num=question_num,
         )
@@ -310,7 +303,7 @@ async def finished_test_handler(callback_query: CallbackQuery, state: FSMContext
             subject_area=subject_area,
             subject=subject,
             theme=theme,
-            complexity=complexity,
+            grade=grade,
             format_response=format_response,
             answer_num=answer_num,
             question_num=question_num,
@@ -320,7 +313,7 @@ async def finished_test_handler(callback_query: CallbackQuery, state: FSMContext
             subject_area=subject_area,
             subject=subject,
             theme=theme,
-            complexity=complexity,
+            grade=grade,
             format_response=format_response,
             answer_num=answer_num,
             mixed_percent=mixed_percent,
