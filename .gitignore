@@ -1,6 +1,8 @@
 /.venv
 *.env
 *.log
+.idea
+*.ipynb
 /train_model
 *.json
 *.txt
