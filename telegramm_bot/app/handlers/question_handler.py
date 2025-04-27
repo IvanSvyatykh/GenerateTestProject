@@ -111,16 +111,16 @@ async def choose_theme_handler(message: types.Message, state: FSMContext):
     await state.set_state(QuestionStateMachine.grade)
     await message.answer(
         text=CHOOSE_GRADE.format(
-            subject_area=subject_area,
-            subject=subject,
-            theme=theme
+            subject_area=subject_area, subject=subject, theme=theme
         ),
         parse_mode="Markdown",
         reply_markup=await get_class_keyboard(subject_area),
     )
 
 
-@router.callback_query(lambda c: c.data.startswith("grade_"), QuestionStateMachine.grade)
+@router.callback_query(
+    lambda c: c.data.startswith("grade_"), QuestionStateMachine.grade
+)
 async def choose_grade_handler(callback_query: CallbackQuery, state: FSMContext):
     data = await state.get_data()
     subject_area = data.get("subject_area")
@@ -163,6 +163,7 @@ async def choose_format_response_handler(
         "open": "📜 Открытые вопросы",
         "choices": "✅ Варианты ответов",
         "mixed": "🔀 Смешанный",
+        "pass": "🔠 С пропусками",
     }
 
     format_response = callback_query.data.split("_")[1]
@@ -211,7 +212,7 @@ async def choose_answer_question_num_handler(
 
     answer_num = callback_query.data.split("_")[3]
     await state.update_data(answer_num=answer_num)
-    if format_response == "✅ Варианты ответов":
+    if format_response == "✅ Варианты ответов" or format_response=="🔠 С пропусками":
         await state.set_state(QuestionStateMachine.question_num)
         await callback_query.message.edit_text(
             text=CHOOSE_QUESTION_NUM_WITH_ANSWER_NUM.format(
@@ -275,7 +276,9 @@ async def choose_mixed_percent_handler(
     )
 
 
-@router.callback_query(lambda c: c.data.startswith("question_num_"), QuestionStateMachine.question_num)
+@router.callback_query(
+    lambda c: c.data.startswith("question_num_"), QuestionStateMachine.question_num
+)
 async def finished_test_handler(callback_query: CallbackQuery, state: FSMContext):
     await state.update_data(question_num=callback_query.data.split("_")[2])
     data = await state.get_data()

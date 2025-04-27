@@ -139,6 +139,7 @@ async def get_format_response_keyboard() -> InlineKeyboardMarkup:
         [InlineKeyboardButton(text="📜 Открытые вопросы", callback_data="format_open")],
         [InlineKeyboardButton(text="✅ Варианты ответов", callback_data="format_choices")],
         [InlineKeyboardButton(text="🔀 Смешанный", callback_data="format_mixed")],
+        [InlineKeyboardButton(text="🔠 С пропусками", callback_data="format_pass")]
     ])
 
 

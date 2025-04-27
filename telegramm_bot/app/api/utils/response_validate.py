@@ -12,7 +12,7 @@ def validate_json(test_json: dict, format_response: str) -> bool:
         if format_response == "📜 Открытые вопросы":
             if "answers" in question or "correct_answer" not in question:
                 return False
-        elif format_response == "✅ Варианты ответов":
+        elif format_response == "✅ Варианты ответов" or format_response =="🔠 С пропусками":
             if "answers" not in question or "correct_answer" not in question:
                 return False
         elif format_response == "🔀 Смешанный":

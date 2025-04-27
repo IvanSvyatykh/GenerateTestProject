@@ -44,7 +44,7 @@ async def file_format_handler(callback_query: CallbackQuery, state: FSMContext):
     with open(file_path, "rb"):
         document = FSInputFile(file_path, filename=os.path.basename(file_path))
     print("Log to db")
-    async with get_async_session() as db_session:
+    """ async with get_async_session() as db_session:
         print("start logging...")
         subject = (
             data.get("subject")
@@ -61,7 +61,7 @@ async def file_format_handler(callback_query: CallbackQuery, state: FSMContext):
             "date": datetime.now(),
         }
         await logs_repo.add_log(log)
-        print("end logging ...")
+        print("end logging ...") """
     await callback_query.message.answer_document(
         document=document,
         caption=f"Тест в формате {file_format.upper()}",

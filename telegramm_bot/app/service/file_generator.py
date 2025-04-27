@@ -13,10 +13,10 @@ async def generate_docx(test_json, theme, user_id, format_response):
         except json.JSONDecodeError:
             raise ValueError("Некорректный JSON")
 
-    if not isinstance(test_json, dict) or 'questions' not in test_json:
+    if not isinstance(test_json, dict) or "questions" not in test_json:
         raise ValueError("test_json должен содержать ключ 'questions'")
 
-    questions = test_json['questions']
+    questions = test_json["questions"]
     document = Document()
     document.add_heading(f"Тема теста: {theme}", level=1)
 
@@ -24,12 +24,15 @@ async def generate_docx(test_json, theme, user_id, format_response):
         q_text = f"{idx}. {question['question']}"
         document.add_paragraph(q_text)
 
-        if format_response == "✅ Варианты ответов":
-            for index, answer in enumerate(question.get('answers', []), 1):
+        if (
+            format_response == "✅ Варианты ответов"
+            or format_response == "🔠 С пропусками"
+        ):
+            for index, answer in enumerate(question.get("answers", []), 1):
                 document.add_paragraph(f"   {index}. {answer}")
         elif format_response == "🔀 Смешанный":
             if question.get("type") == "choice":
-                for index, answer in enumerate(question.get('answers', []), 1):
+                for index, answer in enumerate(question.get("answers", []), 1):
                     document.add_paragraph(f"   {index}. {answer}")
             document.add_paragraph("")
         elif format_response == "📜 Открытые вопросы":
@@ -55,26 +58,29 @@ async def generate_pdf(test_json, theme, user_id, format_response):
         except json.JSONDecodeError:
             raise ValueError("Некорректный JSON")
 
-    if not isinstance(test_json, dict) or 'questions' not in test_json:
+    if not isinstance(test_json, dict) or "questions" not in test_json:
         raise ValueError("test_json должен содержать ключ 'questions'")
 
-    questions = test_json['questions']
+    questions = test_json["questions"]
     pdf = FPDF()
     pdf.add_page()
-    pdf.add_font('ArialUnicode', '', 'ttf/Arial-Unicode-Regular.ttf', uni=True)
-    pdf.set_font('ArialUnicode', size=12)
+    pdf.add_font("ArialUnicode", "", "ttf/Arial-Unicode-Regular.ttf", uni=True)
+    pdf.set_font("ArialUnicode", size=12)
 
     pdf.cell(200, 10, txt=f"Тема теста: {theme}", ln=True, align="C")
 
     for idx, question in enumerate(questions, 1):
-        pdf.cell(200, 10, txt=f"{idx}. {question['question']}", ln=True)
+        pdf.cell(200, 10, txt=f"{idx}. {question['question']}", ln=True, align="J")
 
-        if format_response == "✅ Варианты ответов":
-            for index, answer in enumerate(question.get('answers', []), 1):
+        if (
+            format_response == "✅ Варианты ответов"
+            or format_response == "🔠 С пропусками"
+        ):
+            for index, answer in enumerate(question.get("answers", []), 1):
                 pdf.cell(200, 10, txt=f"   {index}. {answer}", ln=True)
         elif format_response == "🔀 Смешанный":
             if question.get("type") == "choice":
-                for index, answer in enumerate(question.get('answers', []), 1):
+                for index, answer in enumerate(question.get("answers", []), 1):
                     pdf.cell(200, 10, txt=f"   {index}. {answer}", ln=True)
             pdf.cell(200, 10, txt="", ln=True)
         elif format_response == "📜 Открытые вопросы":
@@ -98,10 +104,10 @@ async def generate_excel(test_json, theme, user_id, format_response):
         except json.JSONDecodeError:
             raise ValueError("Некорректный JSON")
 
-    if not isinstance(test_json, dict) or 'questions' not in test_json:
+    if not isinstance(test_json, dict) or "questions" not in test_json:
         raise ValueError("test_json должен содержать ключ 'questions'")
 
-    questions = test_json['questions']
+    questions = test_json["questions"]
     workbook = Workbook()
     sheet = workbook.active
     sheet.title = "Тест"
@@ -112,13 +118,16 @@ async def generate_excel(test_json, theme, user_id, format_response):
         sheet.cell(row=row, column=1, value=f"{idx}. {question['question']}")
         row += 1
 
-        if format_response == "✅ Варианты ответов":
-            for index, answer in enumerate(question.get('answers', []), 1):
+        if (
+            format_response == "✅ Варианты ответов"
+            or format_response == "🔠 С пропусками"
+        ):
+            for index, answer in enumerate(question.get("answers", []), 1):
                 sheet.cell(row=row, column=1, value=f"   {index}. {answer}")
                 row += 1
         elif format_response == "🔀 Смешанный":
             if question.get("type") == "choice":
-                for index, answer in enumerate(question.get('answers', []), 1):
+                for index, answer in enumerate(question.get("answers", []), 1):
                     sheet.cell(row=row, column=1, value=f"   {index}. {answer}")
                     row += 1
             row += 1
@@ -136,4 +145,3 @@ async def generate_excel(test_json, theme, user_id, format_response):
     os.makedirs("tests", exist_ok=True)
     workbook.save(file_path)
     return file_path
-
