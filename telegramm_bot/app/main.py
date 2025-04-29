@@ -12,10 +12,11 @@ from aiogram.webhook.aiohttp_server import (
 )
 
 from handlers import (
-    auth_hanlder,
     question_handler,
     file_format_hanlder,
     manual_input_handler,
+    start_hanlder,
+    back_handler
 )
 
 
@@ -45,10 +46,11 @@ async def main():
     # dp = Dispatcher()
     bot = Bot(token=BOT_TOKEN)
     dp = Dispatcher(storage=MemoryStorage())
-    dp.include_router(auth_hanlder.router)
+    dp.include_router(start_hanlder.router)
     dp.include_router(question_handler.router)
     dp.include_router(file_format_hanlder.router)
     dp.include_router(manual_input_handler.router)
+    dp.include_router(back_handler.router)
     # dp.startup.register(on_startup)
     app = web.Application()
     webhook_requests_handler = SimpleRequestHandler(

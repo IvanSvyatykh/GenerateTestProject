@@ -34,6 +34,7 @@ from handlers.utils.keyboards import (
     get_file_format_keyboard,
     get_area_keyboard,
     get_new_generate_keyboard,
+    get_back_keyboard
 )
 
 
@@ -92,6 +93,8 @@ async def choose_subject_handler(callback_query: CallbackQuery, state: FSMContex
     await callback_query.message.edit_text(
         text=CHOOSE_THEME.format(subject_area=subject_area, subject=subject),
         parse_mode="Markdown",
+        reply_markup= await get_back_keyboard()
+        
     )
 
 
@@ -212,7 +215,7 @@ async def choose_answer_question_num_handler(
 
     answer_num = callback_query.data.split("_")[3]
     await state.update_data(answer_num=answer_num)
-    if format_response == "✅ Варианты ответов" or format_response=="🔠 С пропусками":
+    if format_response == "✅ Варианты ответов" or format_response == "🔠 С пропусками":
         await state.set_state(QuestionStateMachine.question_num)
         await callback_query.message.edit_text(
             text=CHOOSE_QUESTION_NUM_WITH_ANSWER_NUM.format(
