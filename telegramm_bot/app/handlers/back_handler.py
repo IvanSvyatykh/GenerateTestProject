@@ -38,17 +38,11 @@ router = Router()
 
 @router.callback_query(lambda c: c.data == "back", QuestionStateMachine.theme)
 async def step_to_subject(callback_query: CallbackQuery, state: FSMContext):
-    data = await state.get_data()
-    subject_area = data.get("subject_area")
-    for key, value in SUBJECT_AREA_NAMES.items():
-        if subject_area in value:
-            subject_area = key
-            break
     await state.set_state(QuestionStateMachine.subject)
     await callback_query.message.edit_text(
-        text=CHOOSE_SUBJECT.format(subject_area=SUBJECT_AREA_NAMES[subject_area]),
+        text=CHOOSE_SUBJECT.format(subject_area=SUBJECT_AREA_NAMES),
         parse_mode="Markdown",
-        reply_markup=await get_subject_keyboard(subject_area),
+        reply_markup=await get_subject_keyboard(),
     )
 
 
