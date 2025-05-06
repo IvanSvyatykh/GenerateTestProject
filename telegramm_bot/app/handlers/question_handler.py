@@ -10,8 +10,6 @@ from handlers.utils.shared import loading_tasks
 from handlers.utils.loading import animate_loading
 from handlers.utils.answers import (
     ERROR_MESS,
-    CHOOSE_SUBJECT_AREA,
-    CHOOSE_SUBJECT,
     CHOOSE_THEME,
     CHOOSE_GRADE,
     CHOOSE_FORMAT_RESPONSE,
@@ -25,16 +23,14 @@ from handlers.utils.answers import (
     FINISHED_TEST_WITH_ANSWER_NUM_AND_PERCENT,
 )
 from handlers.utils.keyboards import (
-    get_subject_keyboard,
     get_class_keyboard,
     get_format_response_keyboard,
     get_question_num_keyboard,
     get_answer_question_num_keyboard,
     get_mixed_format_keyboard,
     get_file_format_keyboard,
-    get_area_keyboard,
     get_new_generate_keyboard,
-    get_back_keyboard
+    get_back_keyboard,
 )
 
 
@@ -49,32 +45,6 @@ SUBJECT_AREA_NAMES = {
     "tech": "🛠️ Технология",
     "personal": "🧠 Личностное развитие",
 }
-
-
-@router.callback_query(lambda c: c.data == "new_test")
-async def new_test_handler(callback_query: CallbackQuery, state: FSMContext):
-    await state.set_state(QuestionStateMachine.subject_area)
-
-    await callback_query.message.answer(
-        text=CHOOSE_SUBJECT_AREA,
-        parse_mode="Markdown",
-        reply_markup=await get_area_keyboard(),
-    )
-
-
-@router.callback_query(
-    lambda c: c.data.startswith("area_"), QuestionStateMachine.subject_area
-)
-async def subject_area_handler(callback_query: CallbackQuery, state: FSMContext):
-    subject_area = callback_query.data.split("_")[1]
-    await state.update_data(subject_area=SUBJECT_AREA_NAMES[subject_area])
-    await state.set_state(QuestionStateMachine.subject)
-
-    await callback_query.message.edit_text(
-        text=CHOOSE_SUBJECT.format(subject_area=SUBJECT_AREA_NAMES[subject_area]),
-        parse_mode="Markdown",
-        reply_markup=await get_subject_keyboard(subject_area),
-    )
 
 
 @router.callback_query(
@@ -93,8 +63,7 @@ async def choose_subject_handler(callback_query: CallbackQuery, state: FSMContex
     await callback_query.message.edit_text(
         text=CHOOSE_THEME.format(subject_area=subject_area, subject=subject),
         parse_mode="Markdown",
-        reply_markup= await get_back_keyboard()
-        
+        reply_markup=await get_back_keyboard(),
     )
 
 

@@ -26,8 +26,6 @@ from handlers.utils.answers import (
 )
 from handlers.question_handler import (
     SUBJECT_AREA_NAMES,
-    choose_subject_handler,
-    new_test_handler,
 )
 from handlers.utils.keyboards import (
     get_back_keyboard,
@@ -36,11 +34,6 @@ from handlers.utils.keyboards import (
 )
 
 router = Router()
-
-
-@router.callback_query(lambda c: c.data == "back", QuestionStateMachine.subject)
-async def step_to_area(callback_query: CallbackQuery, state: FSMContext):
-    await new_test_handler(callback_query, state)
 
 
 @router.callback_query(lambda c: c.data == "back", QuestionStateMachine.theme)
