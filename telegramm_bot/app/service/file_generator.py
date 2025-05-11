@@ -84,11 +84,13 @@ async def generate_pdf(test_json, theme, user_id, format_response):
             or format_response == "🔠 С пропусками"
         ):
             for index, answer in enumerate(question.get("answers", []), 1):
-                pdf.multi_cell(text_width, 10, txt=f"   {index}. {answer}")
+                pdf.set_x(20)
+                pdf.multi_cell(text_width - 20, 10, txt=f"{index}. {answer}")
         elif format_response == "🔀 Смешанный":
             if question.get("type") == "choice":
                 for index, answer in enumerate(question.get("answers", []), 1):
-                    pdf.multi_cell(text_width, 10, txt=f"   {index}. {answer}")
+                    pdf.set_x(20)
+                    pdf.multi_cell(text_width - 20, 10, txt=f"{index}. {answer}")
             pdf.ln(5)
         elif format_response == "📜 Открытые вопросы":
             pdf.ln(5)
@@ -98,7 +100,8 @@ async def generate_pdf(test_json, theme, user_id, format_response):
     pdf.ln()
 
     for idx, question in enumerate(questions, 1):
-        pdf.multi_cell(text_width, 10, txt=f"{idx}. {question['correct_answer']}")
+        pdf.set_x(20)  # Отступ слева, чтобы не прилипало к краю
+        pdf.multi_cell(text_width - 20, 10, txt=f"{idx}. {question['correct_answer']}")
 
     file_path = f"tests/{user_id}_{datetime.now().strftime('%Y%m%d_%H%M%S')}.pdf"
     os.makedirs("tests", exist_ok=True)
