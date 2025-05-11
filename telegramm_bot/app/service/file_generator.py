@@ -67,29 +67,38 @@ async def generate_pdf(test_json, theme, user_id, format_response):
     pdf.add_font("ArialUnicode", "", "ttf/Arial-Unicode-Regular.ttf", uni=True)
     pdf.set_font("ArialUnicode", size=12)
 
-    pdf.cell(200, 10, txt=f"Тема теста: {theme}", ln=True, align="C")
+    # Установим ширину для переноса текста (например, 180)
+    text_width = 180
+
+    # Для заголовка
+    pdf.multi_cell(text_width, 10, txt=f"Тема теста: {theme}", align="C")
+    pdf.ln()  # Добавим пустую строку после заголовка
 
     for idx, question in enumerate(questions, 1):
-        pdf.cell(200, 10, txt=f"{idx}. {question['question']}", ln=True, align="J")
+        # Вопрос с автоматическим переносом
+        pdf.multi_cell(text_width, 10, txt=f"{idx}. {question['question']}", align="J")
+        pdf.ln(5)  # Отступ после вопроса
 
         if (
             format_response == "✅ Варианты ответов"
             or format_response == "🔠 С пропусками"
         ):
             for index, answer in enumerate(question.get("answers", []), 1):
-                pdf.cell(200, 10, txt=f"   {index}. {answer}", ln=True)
+                pdf.multi_cell(text_width, 10, txt=f"   {index}. {answer}")
         elif format_response == "🔀 Смешанный":
             if question.get("type") == "choice":
                 for index, answer in enumerate(question.get("answers", []), 1):
-                    pdf.cell(200, 10, txt=f"   {index}. {answer}", ln=True)
-            pdf.cell(200, 10, txt="", ln=True)
+                    pdf.multi_cell(text_width, 10, txt=f"   {index}. {answer}")
+            pdf.ln(5)
         elif format_response == "📜 Открытые вопросы":
-            pdf.cell(200, 10, txt="", ln=True)
+            pdf.ln(5)
 
     pdf.add_page()
-    pdf.cell(200, 10, txt="Ответы на тест:", ln=True, align="C")
+    pdf.multi_cell(text_width, 10, txt="Ответы на тест:", align="C")
+    pdf.ln()
+
     for idx, question in enumerate(questions, 1):
-        pdf.cell(200, 10, txt=f"{idx}. {question['correct_answer']}", ln=True)
+        pdf.multi_cell(text_width, 10, txt=f"{idx}. {question['correct_answer']}")
 
     file_path = f"tests/{user_id}_{datetime.now().strftime('%Y%m%d_%H%M%S')}.pdf"
     os.makedirs("tests", exist_ok=True)

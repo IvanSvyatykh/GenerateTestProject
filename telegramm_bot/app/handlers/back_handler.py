@@ -30,6 +30,7 @@ from handlers.question_handler import (
 from handlers.utils.keyboards import (
     get_back_keyboard,
     get_class_keyboard,
+    get_format_response_keyboard,
     get_subject_keyboard,
 )
 
@@ -74,4 +75,48 @@ async def step_to_grade(callback_query: CallbackQuery, state: FSMContext):
         ),
         parse_mode="Markdown",
         reply_markup=await get_class_keyboard(subject_area),
+    )
+
+
+@router.callback_query(lambda c: c.data == "back", QuestionStateMachine.question_num)
+async def step_to_test_format_from_question_num(
+    callback_query: CallbackQuery, state: FSMContext
+):
+    await state.set_state(QuestionStateMachine.format_response)
+    data = await state.get_data()
+    subject_area = data.get("subject_area")
+    subject = data.get("subject")
+    theme = data.get("theme")
+    grade = data.get("grade")
+    await callback_query.message.edit_text(
+        text=CHOOSE_FORMAT_RESPONSE.format(
+            subject_area=subject_area,
+            subject=subject,
+            theme=theme,
+            grade=grade,
+        ),
+        parse_mode="Markdown",
+        reply_markup=await get_format_response_keyboard(),
+    )
+
+
+@router.callback_query(lambda c: c.data == "back", QuestionStateMachine.answer_num)
+async def step_to_test_format_fron_answer_num(
+    callback_query: CallbackQuery, state: FSMContext
+):
+    await state.set_state(QuestionStateMachine.format_response)
+    data = await state.get_data()
+    subject_area = data.get("subject_area")
+    subject = data.get("subject")
+    theme = data.get("theme")
+    grade = data.get("grade")
+    await callback_query.message.edit_text(
+        text=CHOOSE_FORMAT_RESPONSE.format(
+            subject_area=subject_area,
+            subject=subject,
+            theme=theme,
+            grade=grade,
+        ),
+        parse_mode="Markdown",
+        reply_markup=await get_format_response_keyboard(),
     )

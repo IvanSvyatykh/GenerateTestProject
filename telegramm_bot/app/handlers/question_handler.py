@@ -51,9 +51,6 @@ SUBJECT_AREA_NAMES = {
     lambda c: c.data.startswith("subject_"), QuestionStateMachine.subject
 )
 async def choose_subject_handler(callback_query: CallbackQuery, state: FSMContext):
-    data = await state.get_data()
-    subject_area = data.get("subject_area")
-
     subject = callback_query.data.split("_")[1]
     await state.update_data(subject=subject)
 
@@ -61,7 +58,7 @@ async def choose_subject_handler(callback_query: CallbackQuery, state: FSMContex
 
     await state.set_state(QuestionStateMachine.theme)
     await callback_query.message.edit_text(
-        text=CHOOSE_THEME.format(subject_area=subject_area, subject=subject),
+        text=CHOOSE_THEME.format(subject=subject),
         parse_mode="Markdown",
         reply_markup=await get_back_keyboard(),
     )
