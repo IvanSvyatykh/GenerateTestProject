@@ -1,12 +1,12 @@
 from aiogram.types import InlineKeyboardButton, InlineKeyboardMarkup
 
-SUBJECT_AREAS = {
+SUBJECT_AREAS = [
     "🇷🇺 Русский язык",
     "📖 Литература",
     "🇬🇧 Английский язык",
     "🇩🇪 Немецкий язык",
     "🇫🇷 Французский язык",
-}
+]
 
 SUBJECT_GRADES = {
     "🇷🇺 Русский язык": list(range(1, 12 + 1)),
@@ -34,7 +34,6 @@ async def get_subject_keyboard() -> InlineKeyboardMarkup:
         [InlineKeyboardButton(text=subj, callback_data=f"subject_{subj}")]
         for subj in SUBJECT_AREAS
     ]
-    keyboard.append([InlineKeyboardButton(text="Назад", callback_data="back")])
     return InlineKeyboardMarkup(inline_keyboard=keyboard)
 
 
