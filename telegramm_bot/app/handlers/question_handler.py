@@ -9,6 +9,7 @@ from api.rapid_gpt4_requests import gpt4_request
 from handlers.utils.shared import loading_tasks
 from handlers.utils.loading import animate_loading
 from handlers.utils.answers import (
+    CHOOSE_SUBJECT_AREA,
     ERROR_MESS,
     CHOOSE_THEME,
     CHOOSE_GRADE,
@@ -31,8 +32,8 @@ from handlers.utils.keyboards import (
     get_file_format_keyboard,
     get_new_generate_keyboard,
     get_back_keyboard,
+    get_subject_keyboard,
 )
-
 
 router = Router()
 
@@ -45,6 +46,17 @@ SUBJECT_AREA_NAMES = {
     "tech": "🛠️ Технология",
     "personal": "🧠 Личностное развитие",
 }
+
+
+@router.callback_query(lambda c: c.data == "new_test")
+async def new_test_handler(callback_query: CallbackQuery, state: FSMContext):
+    await state.set_state(QuestionStateMachine.subject)
+
+    await callback_query.message.answer(
+        text=CHOOSE_SUBJECT_AREA,
+        parse_mode="Markdown",
+        reply_markup=await get_subject_keyboard(),
+    )
 
 
 @router.callback_query(
@@ -120,7 +132,7 @@ async def choose_grade_handler(callback_query: CallbackQuery, state: FSMContext)
     lambda c: c.data.startswith("format_"), QuestionStateMachine.format_response
 )
 async def choose_format_response_handler(
-    callback_query: CallbackQuery, state: FSMContext
+        callback_query: CallbackQuery, state: FSMContext
 ):
     data = await state.get_data()
     subject_area = data.get("subject_area")
@@ -170,7 +182,7 @@ async def choose_format_response_handler(
     lambda c: c.data.startswith("answer_question_num_"), QuestionStateMachine.answer_num
 )
 async def choose_answer_question_num_handler(
-    callback_query: CallbackQuery, state: FSMContext
+        callback_query: CallbackQuery, state: FSMContext
 ):
     data = await state.get_data()
     subject_area = data.get("subject_area")
@@ -216,7 +228,7 @@ async def choose_answer_question_num_handler(
     QuestionStateMachine.percent_format_response,
 )
 async def choose_mixed_percent_handler(
-    callback_query: CallbackQuery, state: FSMContext
+        callback_query: CallbackQuery, state: FSMContext
 ):
     data = await state.get_data()
     subject_area = data.get("subject_area")
