@@ -3,6 +3,8 @@ from time import time
 from aiogram import Router, types, F
 from aiogram.fsm.context import FSMContext
 from aiogram.types import CallbackQuery
+
+from api.gigachat_requests import gigachat_request
 from handlers.utils.state_machine import QuestionStateMachine
 from api.utils.promt_builder import create_user_prompt
 from api.rapid_gpt4_requests import gpt4_request
@@ -316,7 +318,7 @@ async def finished_test_handler(callback_query: CallbackQuery, state: FSMContext
 
     user_prompt = create_user_prompt(data)
     start = time()
-    response = await gpt4_request(user_prompt, format_response)
+    response = await gigachat_request(user_prompt, format_response)
     end = time()
     await state.update_data(generation_time=int(end - start))
     if key in loading_tasks:
